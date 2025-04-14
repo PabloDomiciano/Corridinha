@@ -18,11 +18,18 @@ FPS = 60
 # Carrega imagens
 track_img = pygame.image.load("./assets/track/track.png").convert()
 car_img = pygame.image.load("./assets/cars/car.png").convert_alpha()
+fuel_img = pygame.image.load("./assets/icons/fuel.png").convert_alpha()
+enemy_imgs = [
+    pygame.image.load("./assets/cars/ambulancia.png").convert_alpha(),
+    pygame.image.load("./assets/cars/onibus.png").convert_alpha(),
+    pygame.image.load("./assets/cars/car.png").convert_alpha(),
+]
 
 # Escala as imagens
 enemy_img = pygame.transform.scale(car_img, (60, 100))  # Pode trocar por outro carro futuramente
 track_img = pygame.transform.scale(track_img, (WIDTH, HEIGHT))
 car_img = pygame.transform.scale(car_img, (60, 100))
+fuel_img = pygame.transform.scale(fuel_img, (60, 100))
 
 
 # ========== CLASSES ==========
@@ -61,12 +68,32 @@ class Car:
         screen.blit(self.image, self.rect)
 
 
+class FuelPickup:
+    def __init__(self, image):
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.x = random.choice([50, 80, 200, 230])
+        self.rect.y = random.randint(-200, -50)  # Coloca o ícone fora da tela, no topo
+        self.speed = 5
+
+    def update(self):
+        self.rect.y += self.speed
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)
+
+    def off_screen(self):
+        return self.rect.top > HEIGHT
+
+
 class EnemyCar:
     def __init__(self):
-        self.image = enemy_img
+        self.image = random.choice(enemy_imgs)  # Escolhe aleatoriamente uma imagem de carro inimigo
+        self.image = pygame.transform.scale(self.image, (60, 100))  # Ajusta o tamanho do carro inimigo
         self.rect = self.image.get_rect()
-        self.rect.x = random.choice([80, 180, 280, 380])
-        self.rect.y = -100
+        # Agora, o carro aparece entre as posições 80, 180, 280 e 380 (mais centralizado)
+        self.rect.x = random.choice([80, 180, 280, 380])  # Lado esquerdo ou direito mais centralizado
+        self.rect.y = random.randint(-200, -50)  # Coloca o inimigo fora da tela, no topo
         self.speed = random.randint(4, 7)
 
     def update(self):
@@ -80,14 +107,20 @@ class EnemyCar:
 
 
 # ========== INSTÂNCIAS ==========
+
 track = Track(track_img)
 car = Car(car_img)
 hud = HUD(SCREEN, car)
 enemies = []
+fuel_pickups = []
 
 
 # ========== LOOP PRINCIPAL ==========
+
 running = True
+enemy_timer = 0  # Contador de tempo para inimigos
+enemy_spawn_rate = 60  # Taxa de spawn dos inimigos (em frames)
+
 while running:
     clock.tick(FPS)
     keys = pygame.key.get_pressed()
@@ -101,21 +134,15 @@ while running:
     track.update()
     car.update(keys)
 
-    # Geração de inimigos
-    if random.randint(0, 100) < 2:
+    # Geração de inimigos (com intervalo de tempo)
+    enemy_timer += 1
+    if enemy_timer >= enemy_spawn_rate:
         enemies.append(EnemyCar())
-# Atualizações de fundo e jogador
-    track.update()
-    car.update(keys)
+        enemy_timer = 0  # Resetando o contador de tempo para o próximo inimigo
+        enemy_spawn_rate = random.randint(40, 80)  # Intervalo de tempo aleatório entre os inimigos
 
-    # Geração de inimigos
-    if random.randint(0, 100) < 2:
-        enemies.append(EnemyCar())
-
-    # Desenho
-    track.draw(SCREEN)  # Desenha o fundo primeiro
-
-    for enemy in enemies[:]:  # Depois inimigos
+    # Desenho dos inimigos
+    for enemy in enemies[:]:  
         enemy.update()
         enemy.draw(SCREEN)
 
@@ -126,10 +153,32 @@ while running:
         if enemy.off_screen():
             enemies.remove(enemy)
 
-    car.draw(SCREEN)  # Por último, desenha o carro do jogador
+    # Geração de ícones de combustível (com chance aleatória)
+    if random.random() < 0.01:  # 1% de chance de gerar um ícone de combustível a cada frame
+        fuel_pickups.append(FuelPickup(fuel_img))
+
+    # Atualizar e desenhar ícones de combustível
+    for fuel in fuel_pickups[:]:
+        fuel.update()
+        fuel.draw(SCREEN)
+
+        if car.rect.colliderect(fuel.rect):  # Colisão entre o carro e o ícone de combustível
+            print("COMBUSTÍVEL RECARREGADO!")
+            hud.fuel = min(hud.max_fuel, hud.fuel + 20)  # Recarrega 20 de combustível
+            fuel_pickups.remove(fuel)  # Remove o ícone depois de ser coletado
+
+        if fuel.off_screen():
+            fuel_pickups.remove(fuel)
+
+    # Desenho
+    track.draw(SCREEN)
+    for enemy in enemies:
+        enemy.draw(SCREEN)
+    car.draw(SCREEN)
     hud.update()
     hud.draw()
 
     pygame.display.flip()
+
 pygame.quit()
 sys.exit()

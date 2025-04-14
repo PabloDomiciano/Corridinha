@@ -7,6 +7,8 @@ class HUD:
         self.font = pygame.font.SysFont("Arial", 20)
         self.max_fuel = 100
         self.fuel = self.max_fuel
+        self.fuel_icon = pygame.image.load("./assets/icons/fuel.png").convert_alpha()  # Carrega o ícone de combustível
+        self.fuel_icon = pygame.transform.scale(self.fuel_icon, (40, 40))  # Escala o ícone
 
     def update(self):
         # Simula consumo de combustível
@@ -28,3 +30,6 @@ class HUD:
         pygame.draw.rect(self.screen, fuel_color, (10, 40, fuel_bar_width * fuel_percentage, fuel_bar_height))  # preenchimento
         fuel_text = self.font.render("Combustível", True, (255, 255, 255))
         self.screen.blit(fuel_text, (10, 65))
+
+        # Desenha o ícone de combustível
+        self.screen.blit(self.fuel_icon, (150, 50))  # Posição no canto superior direito
