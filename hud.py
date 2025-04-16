@@ -1,35 +1,50 @@
 import pygame
+import os
 
 class HUD:
     def __init__(self, screen, car):
         self.screen = screen
         self.car = car
-        self.font = pygame.font.SysFont("Arial", 20)
+        self.fuel = 100
         self.max_fuel = 100
-        self.fuel = self.max_fuel
-        self.fuel_icon = pygame.image.load("./assets/icons/fuel.png").convert_alpha()  # Carrega o ícone de combustível
-        self.fuel_icon = pygame.transform.scale(self.fuel_icon, (40, 40))  # Escala o ícone
+
+        # Fonte: Arial fallback se PixelEmulator não existir
+        font_path = os.path.join("assets", "fonts", "PixelEmulator.ttf")
+        if os.path.exists(font_path):
+            self.font = pygame.font.Font(font_path, 24)
+        else:
+            print("⚠️ Fonte não encontrada. Usando Arial.")
+            self.font = pygame.font.SysFont("Arial", 24)
+
+        # Cores
+        self.bg_color = (0, 0, 0, 180)      # Fundo escuro semi-transparente
+        self.text_color = (255, 255, 255)
+        self.fuel_color = (50, 205, 50)     # Verde combustível
+        self.fuel_bg_color = (100, 100, 100)
+
+        # Área do HUD (canto superior esquerdo)
+        self.hud_rect = pygame.Rect(10, 10, 220, 80)
 
     def update(self):
-        # Simula consumo de combustível
-        if self.fuel > 0:
-            self.fuel -= 0.05
+        self.fuel -= 0.05
+        if self.fuel < 0:
+            self.fuel = 0
 
     def draw(self):
-        # Velocidade
-        speed_text = self.font.render(f"Velocidade: {self.car.speed} km/h", True, (255, 255, 255))
-        self.screen.blit(speed_text, (10, 10))
+        # Fundo do HUD
+        pygame.draw.rect(self.screen, self.bg_color, self.hud_rect, border_radius=10)
 
-        # Combustível
-        fuel_bar_width = 200
-        fuel_bar_height = 20
-        fuel_percentage = self.fuel / self.max_fuel
-        fuel_color = (0, 200, 0) if fuel_percentage > 0.3 else (255, 100, 0)
+        # Texto de combustível
+        fuel_text = self.font.render(f"Fuel: {int(self.fuel)}%", True, self.text_color)
+        self.screen.blit(fuel_text, (self.hud_rect.x + 10, self.hud_rect.y + 10))
 
-        pygame.draw.rect(self.screen, (100, 100, 100), (10, 40, fuel_bar_width, fuel_bar_height))  # fundo
-        pygame.draw.rect(self.screen, fuel_color, (10, 40, fuel_bar_width * fuel_percentage, fuel_bar_height))  # preenchimento
-        fuel_text = self.font.render("Combustível", True, (255, 255, 255))
-        self.screen.blit(fuel_text, (10, 65))
+        # Barra de combustível
+        fuel_bar_width = int((self.fuel / self.max_fuel) * 180)
+        pygame.draw.rect(self.screen, self.fuel_bg_color,
+            (self.hud_rect.x + 10, self.hud_rect.y + 40, 180, 10), border_radius=5)
+        pygame.draw.rect(self.screen, self.fuel_color,
+            (self.hud_rect.x + 10, self.hud_rect.y + 40, fuel_bar_width, 10), border_radius=5)
 
-        # Desenha o ícone de combustível
-        self.screen.blit(self.fuel_icon, (150, 50))  # Posição no canto superior direito
+        # Velocidade abaixo da barra
+        speed_text = self.font.render(f"Speed: {self.car.speed * 10} km/h", True, self.text_color)
+        self.screen.blit(speed_text, (self.hud_rect.x + 10, self.hud_rect.y + 58))

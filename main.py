@@ -2,7 +2,7 @@ import pygame
 import random
 import sys
 from hud import HUD
-
+ 
 # Inicializa o pygame
 pygame.init()
 
