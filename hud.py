@@ -8,13 +8,7 @@ class HUD:
         self.fuel = 100
         self.max_fuel = 100
 
-        # Fonte: Arial fallback se PixelEmulator não existir
-        font_path = os.path.join("assets", "fonts", "PixelEmulator.ttf")
-        if os.path.exists(font_path):
-            self.font = pygame.font.Font(font_path, 24)
-        else:
-            print("⚠️ Fonte não encontrada. Usando Arial.")
-            self.font = pygame.font.SysFont("Arial", 24)
+        self.font = pygame.font.SysFont("Arial", 24)
 
         # Cores
         self.bg_color = (0, 0, 0, 180)      # Fundo escuro semi-transparente
@@ -46,5 +40,5 @@ class HUD:
             (self.hud_rect.x + 10, self.hud_rect.y + 40, fuel_bar_width, 10), border_radius=5)
 
         # Velocidade abaixo da barra
-        speed_text = self.font.render(f"Speed: {self.car.speed * 10} km/h", True, self.text_color)
+        speed_text = self.font.render(f"Speed: {int(self.car.speed) * 10} km/h", True, self.text_color)
         self.screen.blit(speed_text, (self.hud_rect.x + 10, self.hud_rect.y + 58))
