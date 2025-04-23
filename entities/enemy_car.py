@@ -1,12 +1,11 @@
-import pygame
 import random
 
 class EnemyCar:
-    def __init__(self, images, height):
-        self.image = random.choice(images)
+    def __init__(self, image, x, height):
+        self.image = image
         self.rect = self.image.get_rect()
-        self.rect.x = random.choice([120, 280])
-        self.rect.y = random.randint(-200, -50)
+        self.rect.x = x
+        self.rect.y = random.randint(-200, -100)
         self.speed = random.randint(4, 7)
         self.height = height
 

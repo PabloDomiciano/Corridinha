@@ -18,19 +18,22 @@ class Game:
         self.clock = pygame.time.Clock()
         self.screen = Screen(width, height, title)
 
-        # Carrega as imagens
+        # Controle de spawn de inimigos
+        self.enemy_lanes = [120, 280]
+        self.last_spawn_time = 0
+        self.spawn_delay = 1000  # milissegundos
+
+        # Carrega imagens
         self.img_config = ImgConfig(self.width, self.height)
 
-        # Instanciando objetos do jogo com as imagens certas
+        # Instancia objetos do jogo
         self.track = Track(self.img_config.track_img, self.height)
         self.car = Car(self.img_config.car_img, self.width, self.height)
         self.hud = HUD(self.screen.surface, self.car)
         self.enemies = []
         self.fuel_pickups = []
-        self.enemy_timer = 0
-        self.enemy_spawn_rate = 60
 
-        # Lista de imagens de inimigos
+        # Imagens dos inimigos
         self.enemy_imgs = [
             self.img_config.ambulancia_img,
             self.img_config.onibus_img,
@@ -54,12 +57,12 @@ class Game:
         self.track.update()
         self.car.update(keys)
 
-        # Spawn de inimigos
-        self.enemy_timer += 1
-        if self.enemy_timer >= self.enemy_spawn_rate:
-            self.enemies.append(EnemyCar(self.enemy_imgs, self.height))
-            self.enemy_timer = 0
-            self.enemy_spawn_rate = random.randint(40, 80)
+        # Spawn controlado de inimigos
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_spawn_time > self.spawn_delay:
+            self.spawn_enemy()
+            self.last_spawn_time = current_time
+            self.spawn_delay = random.randint(600, 1500)  # delay variável
 
         # Atualiza inimigos
         for enemy in self.enemies[:]:
@@ -70,11 +73,10 @@ class Game:
             if enemy.off_screen():
                 self.enemies.remove(enemy)
 
-        # Spawn de combustível
+        # Spawn e update de combustível
         if random.random() < 0.01:
             self.fuel_pickups.append(FuelPickup(self.img_config.fuel_img, self.height))
 
-        # Atualiza combustível
         for fuel in self.fuel_pickups[:]:
             fuel.update()
             if self.car.rect.colliderect(fuel.rect):
@@ -83,6 +85,22 @@ class Game:
                 self.fuel_pickups.remove(fuel)
             elif fuel.off_screen():
                 self.fuel_pickups.remove(fuel)
+
+    def spawn_enemy(self):
+        # Marca faixas ocupadas
+        lanes_in_use = {lane: False for lane in self.enemy_lanes}
+        for enemy in self.enemies:
+            for lane in self.enemy_lanes:
+                if abs(enemy.rect.x - lane) < 10 and enemy.rect.y < self.height // 2:
+                    lanes_in_use[lane] = True
+
+        # Pega faixas livres
+        free_lanes = [lane for lane, in_use in lanes_in_use.items() if not in_use]
+
+        if free_lanes:
+            lane = random.choice(free_lanes)
+            enemy_img = random.choice(self.enemy_imgs)
+            self.enemies.append(EnemyCar(enemy_img, lane, self.height))
 
     def draw(self):
         self.track.draw(self.screen.surface)
