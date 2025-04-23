@@ -19,7 +19,7 @@ class Game:
         self.screen = Screen(width, height, title)
 
         # Controle de spawn de inimigos
-        self.enemy_lanes = [120, 280]
+        self.enemy_lanes = [200, 280]
         self.last_spawn_time = 0
         self.spawn_delay = 1000  # milissegundos
 
