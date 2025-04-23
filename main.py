@@ -13,4 +13,4 @@ game.run()
 
 # Finaliza o pygame
 pygame.quit()
-sys.exit()
+sys.e

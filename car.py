@@ -2,7 +2,7 @@ import pygame
 
 class Car:
     def __init__(self, image, width, height):
-        self.image = pygame.transform.scale(image, (60, 100))
+        self.image = image
         self.rect = self.image.get_rect()
         self.rect.centerx = width // 2
         self.rect.bottom = height - 30
