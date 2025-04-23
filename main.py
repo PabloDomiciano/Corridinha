@@ -1,6 +1,6 @@
 import pygame
 import sys
-from game import Game
+from core.game import Game
 
 # Inicializa o pygame
 pygame.init()
@@ -13,4 +13,4 @@ game.run()
 
 # Finaliza o pygame
 pygame.quit()
-sys.exit()
+sys.e
