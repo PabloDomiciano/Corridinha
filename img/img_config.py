@@ -1,5 +1,5 @@
 import pygame
-from screen import Screen
+from ui.screen import Screen
 
 class ImgConfig:
     def __init__(self, width, height):

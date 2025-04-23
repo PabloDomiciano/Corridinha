@@ -1,13 +1,13 @@
 import pygame
 import random
 
-from screen import Screen
-from car import Car
-from track import Track
-from fuel import FuelPickup
-from enemy_car import EnemyCar
-from hud import HUD
-from img_config import ImgConfig
+from entities.car import Car
+from entities.track import Track
+from entities.fuel import FuelPickup
+from entities.enemy_car import EnemyCar
+from ui.hud import HUD
+from ui.screen import Screen
+from img.img_config import ImgConfig
 
 class Game:
     def __init__(self, width, height, title):

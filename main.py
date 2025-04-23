@@ -1,6 +1,6 @@
 import pygame
 import sys
-from game import Game
+from core.game import Game
 
 # Inicializa o pygame
 pygame.init()
