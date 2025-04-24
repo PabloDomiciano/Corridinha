@@ -17,7 +17,11 @@ class ImgConfig:
             (80, 120)
         )
 
-        self.fuel_img = pygame.image.load("./assets/icons/fuel.png").convert_alpha()
+
+        self.fuel_img = pygame.transform.scale(
+            pygame.image.load("./assets/icons/fuel.png").convert_alpha(),
+            (50, 50)
+        )
 
         self.ambulancia_img = pygame.transform.scale(
             pygame.image.load("./assets/cars/ambulancia.png").convert_alpha(),
