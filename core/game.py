@@ -8,6 +8,8 @@ from entities.enemy_car import EnemyCar
 from ui.hud import HUD
 from ui.screen import Screen
 from img.img_config import ImgConfig
+from ui.restart_screen import RestartScreen 
+
 
 class Game:
     def __init__(self, width, height, title):
@@ -19,7 +21,7 @@ class Game:
         self.screen = Screen(width, height, title)
 
         # Controle de spawn de inimigos
-        self.enemy_lanes = [200, 280]
+        self.enemy_lanes = [120, 280]
         self.last_spawn_time = 0
         self.spawn_delay = 1000  # milissegundos
 
@@ -69,13 +71,22 @@ class Game:
             enemy.update()
             if enemy.check_collision(self.car):
                 print("COLISÃO! FIM DE JOGO")
-                self.running = False
-            elif enemy.off_screen():
+                # Exibe a tela de reinício
+                restart_screen = RestartScreen(
+                    self.screen.surface, self.hud.font)
+                resultado = restart_screen.mostrar_tela()  # Chama a função para exibir a tela
+                if resultado == "restart":
+                    self.reiniciar_jogo()  # Reinicia o jogo se "Sim" for clicado
+                    return
+                else:
+                    self.running = False  # Encerra o jogo se "Não" for clicado
+            if enemy.off_screen():
                 self.enemies.remove(enemy)
 
         # Spawn e update de combustível
         if random.random() < 0.01:
-            self.fuel_pickups.append(FuelPickup(self.img_config.fuel_img, self.height))
+            self.fuel_pickups.append(FuelPickup(
+                self.img_config.fuel_img, self.height))
 
         for fuel in self.fuel_pickups[:]:
             fuel.update()
@@ -95,7 +106,8 @@ class Game:
                     lanes_in_use[lane] = True
 
         # Pega faixas livres
-        free_lanes = [lane for lane, in_use in lanes_in_use.items() if not in_use]
+        free_lanes = [lane for lane,
+                      in_use in lanes_in_use.items() if not in_use]
 
         if free_lanes:
             lane = random.choice(free_lanes)
@@ -114,3 +126,13 @@ class Game:
         self.car.draw(self.screen.surface)
         self.hud.update()
         self.hud.draw()
+
+    def reiniciar_jogo(self):
+        """Método para reiniciar o jogo"""
+        # Reinicia todos os objetos do jogo
+        self.car = Car(self.img_config.car_img, self.width, self.height)
+        self.hud = HUD(self.screen.surface, self.car)
+        self.enemies = []
+        self.fuel_pickups = []
+        self.track = Track(self.img_config.track_img, self.height)
+        self.hud.fuel = self.hud.max_fuel
