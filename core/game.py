@@ -62,15 +62,15 @@ class Game:
         if current_time - self.last_spawn_time > self.spawn_delay:
             self.spawn_enemy()
             self.last_spawn_time = current_time
-            self.spawn_delay = random.randint(600, 1500)  # delay variável
+            self.spawn_delay = random.randint(600, 1500)
 
         # Atualiza inimigos
         for enemy in self.enemies[:]:
             enemy.update()
-            if self.car.rect.colliderect(enemy.rect):
+            if enemy.check_collision(self.car):
                 print("COLISÃO! FIM DE JOGO")
                 self.running = False
-            if enemy.off_screen():
+            elif enemy.off_screen():
                 self.enemies.remove(enemy)
 
         # Spawn e update de combustível
@@ -79,7 +79,7 @@ class Game:
 
         for fuel in self.fuel_pickups[:]:
             fuel.update()
-            if self.car.rect.colliderect(fuel.rect):
+            if fuel.check_collision(self.car):
                 print("COMBUSTÍVEL RECARREGADO!")
                 self.hud.fuel = min(self.hud.max_fuel, self.hud.fuel + 20)
                 self.fuel_pickups.remove(fuel)
