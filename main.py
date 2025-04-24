@@ -1,6 +1,7 @@
 import pygame
 import sys
 from core.game import Game
+from core.projectile import Projectile
 
 # Inicializa o pygame
 pygame.init()
@@ -14,3 +15,6 @@ game.run()
 # Finaliza o pygame
 pygame.quit()
 sys.e
+ 
+ 
+  

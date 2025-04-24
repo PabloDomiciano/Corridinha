@@ -17,3 +17,9 @@ class Car:
 
     def draw(self, screen):
         screen.blit(self.image, self.rect)
+
+    def handle_input(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                projectile = Projectile(self.player.rect.centerx, self.player.rect.top)
+                self.projectiles.add(projectile)

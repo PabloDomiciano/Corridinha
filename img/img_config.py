@@ -1,5 +1,5 @@
+
 import pygame
-from ui.screen import Screen
 
 class ImgConfig:
     def __init__(self, width, height):
@@ -8,7 +8,7 @@ class ImgConfig:
 
         # Carregamento e redimensionamento de imagens
         self.track_img = pygame.transform.scale(
-            pygame.image.load("./assets/track/track.png").convert(), 
+            pygame.image.load("./assets/track/track.png").convert(),
             (width, height)
         )
 
@@ -17,7 +17,8 @@ class ImgConfig:
             (80, 120)
         )
 
-        self.fuel_img = pygame.image.load("./assets/icons/fuel.png").convert_alpha()
+        self.fuel_img = pygame.image.load(
+            "./assets/icons/fuel.png").convert_alpha()
 
         self.ambulancia_img = pygame.transform.scale(
             pygame.image.load("./assets/cars/ambulancia.png").convert_alpha(),
@@ -32,4 +33,16 @@ class ImgConfig:
         self.car_enemy = pygame.transform.scale(
             pygame.image.load("./assets/cars/car.png").convert_alpha(),
             (80, 120)
+        )
+
+        # Adicionando imagens do power-up
+        self.power_up_img = pygame.transform.scale(
+            pygame.image.load("./assets/icons/bazuca.png").convert_alpha(),
+            (50, 50)  # Ajuste o tamanho conforme necessário
+        )
+
+        self.power_up_icon = pygame.transform.scale(
+            pygame.image.load(
+                "./assets/icons/bazuca.png").convert_alpha(),
+            (30, 30)  # Ajuste o tamanho conforme necessário para a HUD
         )
