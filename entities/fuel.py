@@ -1,11 +1,10 @@
-import random
-from entities.game_object import GameObject
-from img.img_config import ImgConfig
+from entities.base import BaseEntity
 
-class FuelPickup(GameObject):
-    def __init__(self, image, height):
-        self.image = image
-        x = random.choice([140, 280])
-        y = random.randint(-200, -50)
-        speed = 5        
-        super().__init__(image, x, y, speed, height)
+class FuelPickup(BaseEntity):
+    def __init__(self, image, lane_x, screen_height):
+        super().__init__(image, lane_x, -image.get_height())
+        self.speed = 4
+        self.screen_height = screen_height
+
+    def update(self):
+        self.rect.y += self.speed

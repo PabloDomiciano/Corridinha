@@ -1,16 +1,7 @@
-import pygame
-import sys
 from core.game import Game
+from config.settings import WIDTH, HEIGHT, TITLE
 
-# Inicializa o pygame
-pygame.init()
-
-# Cria a instância principal do jogo
-game = Game(width=480, height=640, title="Corridinha")
-
-# Executa o loop do jogo
-game.run()
-
-# Finaliza o pygame
-pygame.quit()
-sys.e
+if __name__ == "__main__":
+    game = Game(WIDTH, HEIGHT, TITLE)
+    game.run()
+    game.quit()

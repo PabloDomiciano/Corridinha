@@ -1,9 +1,13 @@
-import random
-from entities.base_car import BaseCar
-from img.img_config import ImgConfig
+# entities/enemy_car.py
 
-class EnemyCar(BaseCar):
-    def __init__(self, image, x, height):
-        y = random.randint(-200, -100)
-        speed = random.randint(4, 7)
-        super().__init__(image, x, y, speed, height)
+from entities.base import BaseEntity
+
+class EnemyCar(BaseEntity):
+    def __init__(self, image, lane_x, screen_height):
+        # Começa fora da tela (acima do topo)
+        super().__init__(image, lane_x, -image.get_height())
+        self.speed = 6
+        self.screen_height = screen_height
+
+    def update(self):
+        self.rect.y += self.speed
