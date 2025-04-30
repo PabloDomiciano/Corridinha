@@ -1,5 +1,3 @@
-# game.py
-
 import pygame
 import random
 

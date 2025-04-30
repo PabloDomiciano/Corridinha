@@ -1,5 +1,3 @@
-# entities/fuel.py
-
 from entities.base import BaseEntity
 
 class FuelPickup(BaseEntity):
