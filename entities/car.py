@@ -3,6 +3,7 @@
 from entities.base import BaseEntity
 import pygame
 
+
 class Car(BaseEntity):
     def __init__(self, image, screen_width, screen_height, x_pos, y_pos):
         super().__init__(image, x_pos, y_pos)
@@ -30,9 +31,10 @@ class Car(BaseEntity):
             if keys[pygame.K_DOWN] and self.rect.y < self.screen_height - self.rect.height:
                 self.rect.y += self.speed
 
-            
             # Consumir combustível
             self.fuel -= self.fuel_consumption_rate
             if self.fuel < 0:
                 self.fuel = 0
-                
+        else:
+            print("Sem combustível!")
+            # Aqui você pode adicionar alguma lógica quando o combustível acabar.

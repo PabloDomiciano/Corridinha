@@ -9,7 +9,7 @@ class BaseEntity(ABC):
     @abstractmethod
     def update(self):
         """Atualização obrigatória para cada entidade específica."""
-        pass
+    pass
 
     def draw(self, surface):
         surface.blit(self.image, self.rect.topleft)
