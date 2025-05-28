@@ -1,7 +1,6 @@
-from core.game import Game
+from core.game_manager import GameManager  
 from config.settings import WIDTH, HEIGHT, TITLE
 
 if __name__ == "__main__":
-    game = Game(WIDTH, HEIGHT, TITLE)
+    game = GameManager(WIDTH, HEIGHT, TITLE)  
     game.run()
-    game.quit()

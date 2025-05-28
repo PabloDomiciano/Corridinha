@@ -5,57 +5,31 @@ from entities.track import Track
 from entities.fuel import FuelPickup
 from entities.enemy_car import EnemyCar
 from entities.explosion import Explosion
-from ui.hud import HUD
-from ui.screen import Screen
-from img.img_config import ImgConfig
 
 
-class Game:
-    def __init__(self, width, height, title):
-        pygame.init()
-
+class GameWorld:
+    def __init__(self, width, height, img_config):
         self.width = width
         self.height = height
-        self.running = True
-        self.fps = 60
-        self.clock = pygame.time.Clock()
-        self.screen = Screen(width, height, title)
+        self.img_config = img_config
 
         # Controle de spawn de inimigos
         self.enemy_lanes = [100, 220]
         self.last_spawn_time = 0
         self.spawn_delay = 1000
 
-        self.img_config = ImgConfig(self.width, self.height)
-
         self.track = Track(self.img_config.track_img, self.height)
         self.car = Player(self.img_config.car_img, self.width,
                           self.height, x_pos=200, y_pos=500)
-        self.hud = HUD(self.screen.surface, self.car)
         self.enemies = []
         self.fuel_pickups = []
-        self.explosions = []  # <- Lista de explosões
+        self.explosions = []
 
         self.enemy_imgs = [
             self.img_config.ambulancia_img,
             self.img_config.onibus_img,
             self.img_config.car_enemy
         ]
-
-    def run(self):
-        while self.running:
-            self.clock.tick(self.fps)
-            keys = pygame.key.get_pressed()
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
-
-            self.update(keys)
-            self.draw()
-            pygame.display.flip()
-
-        pygame.quit()
 
     def update(self, keys):
         self.track.update()
@@ -67,26 +41,19 @@ class Game:
             self.last_spawn_time = current_time
             self.spawn_delay = random.randint(600, 3500)
 
+        # Atualiza inimigos
         for enemy in self.enemies[:]:
             enemy.update()
-
-            if self.car.check_mask_collision(enemy) or self.car.check_circle_collision(enemy):
-                print("COLISÃO! FIM DE JOGO")
-
-                # Cria uma explosão na posição do carro
-                explosion = Explosion(
-                    self.img_config.explosion_img, self.car.rect.centerx, self.car.rect.centery)
-                self.explosions.append(explosion)
-
-                self.running = False
-            elif enemy.off_screen(self.height):
+            if enemy.off_screen(self.height):
                 self.enemies.remove(enemy)
 
+        # Spawn de combustível
         if random.random() < 0.005:
             lane = random.choice(self.enemy_lanes)
             self.fuel_pickups.append(FuelPickup(
                 self.img_config.fuel_img, lane, self.height))
 
+        # Atualiza combustíveis
         for fuel in self.fuel_pickups[:]:
             fuel.update()
             if fuel.check_collision(self.car):
@@ -115,19 +82,16 @@ class Game:
             enemy_img = random.choice(self.enemy_imgs)
             self.enemies.append(EnemyCar(enemy_img, lane, self.height))
 
-    def draw(self):
-        self.screen.surface.fill((0, 0, 0))
-        self.track.draw(self.screen.surface)
+    def draw(self, surface):
+        self.track.draw(surface)
 
         for enemy in self.enemies:
-            enemy.draw(self.screen.surface)
+            enemy.draw(surface)
 
         for fuel in self.fuel_pickups:
-            fuel.draw(self.screen.surface)
+            fuel.draw(surface)
 
         for explosion in self.explosions:
-            explosion.draw(self.screen.surface)
+            explosion.draw(surface)
 
-        self.car.draw(self.screen.surface)
-        self.hud.update()
-        self.hud.draw()
+        self.car.draw(surface)
