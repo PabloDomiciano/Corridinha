@@ -12,8 +12,8 @@ class Carro(BaseEntity):
         self.rect = self.image.get_rect(topleft=(x_pos, y_pos))
 
         # Inicializa a hitbox com um tamanho diferente da imagem do carro
-        hitbox_width = self.rect.width * 0.8  # 80% do tamanho da largura da imagem
-        hitbox_height = self.rect.height * 0.100  # 60% da altura da imagem
+        hitbox_width = self.rect.width 
+        hitbox_height = self.rect.height 
         
         
         hitbox_x = self.rect.x + (self.rect.width - hitbox_width) / 2  # Centraliza a hitbox

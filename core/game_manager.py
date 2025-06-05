@@ -1,5 +1,5 @@
 import pygame
-from game_world import GameWorld
+from core.game_world import GameWorld
 from img.img_config import ImgConfig
 from ui.hud import HUD
 

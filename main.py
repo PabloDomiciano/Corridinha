@@ -1,5 +1,6 @@
 from config.settings import WIDTH, HEIGHT, TITLE
-from game_manager import GameManager
+from core.game_manager import GameManager
+
 import sys
 import os
 
