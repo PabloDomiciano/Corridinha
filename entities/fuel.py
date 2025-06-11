@@ -1,20 +1,33 @@
-from entities.base import BaseEntity
 import pygame
 
+from entities.hitbox import Hitbox
 
-class FuelPickup(BaseEntity):
-    def __init__(self, image, x_pos, screen_height, speed=3):
-        super().__init__(image, x_pos, y_pos=-image.get_height())
-        self.speed = speed
+
+class FuelPickup:
+    def __init__(self, image, x_pos, screen_height):
+        self.image = image
+        self.rect = self.image.get_rect(topleft=(x_pos, 0))
+        self.speed = 5
         self.screen_height = screen_height
-        self.mask = pygame.mask.from_surface(self.image)
+
+        # Inicializando a hitbox para combustível
+        self.hitbox = Hitbox()
+        self.hitbox.set_rect(
+            self.rect.width, self.rect.height, self.rect.x, self.rect.y)
 
     def update(self):
+        # O combustível desce pela tela
         self.rect.y += self.speed
+        self.hitbox.set_rect(
+            self.rect.width, self.rect.height, self.rect.x, self.rect.y)
 
     def check_collision(self, player):
-        offset = (player.rect.x - self.rect.x, player.rect.y - self.rect.y)
-        return self.mask.overlap(player.mask, offset) is not None
+        # Verifica a colisão com a hitbox do jogador
+        return self.hitbox.check_rect_collision(player)
 
     def off_screen(self, height):
         return self.rect.y > height
+
+    def draw(self, surface):
+        surface.blit(self.image, self.rect)
+        self.hitbox.draw_hitbox(surface)  # Desenha a hitbox do combustível

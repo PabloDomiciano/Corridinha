@@ -25,7 +25,7 @@ class ImgConfig:
         self.car_img = pygame.transform.scale(
             pygame.image.load(os.path.join(
                 self.asset_dir, "cars", "car.png")).convert_alpha(),
-            (80, 120)
+            (50, 90)
         )
 
         # Imagem de combustível
@@ -39,19 +39,19 @@ class ImgConfig:
         self.ambulancia_img = pygame.transform.scale(
             pygame.image.load(os.path.join(
                 self.asset_dir, "cars", "ambulancia.png")).convert_alpha(),
-            (100, 120)
+            (70, 110)
         )
 
         self.onibus_img = pygame.transform.scale(
             pygame.image.load(os.path.join(
                 self.asset_dir, "cars", "onibus.png")).convert_alpha(),
-            (100, 200)
+            (70, 170)
         )
 
         self.car_enemy = pygame.transform.scale(
             pygame.image.load(os.path.join(
                 self.asset_dir, "cars", "car.png")).convert_alpha(),
-            (80, 120)
+            (60, 100)
         )
 
         # Explosão
