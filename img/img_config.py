@@ -53,10 +53,32 @@ class ImgConfig:
                 self.asset_dir, "cars", "car.png")).convert_alpha(),
             (60, 100)
         )
+        
+        # Poder Fantasma
+        self.ghost_power_img = pygame.transform.scale(
+            pygame.image.load(os.path.join(
+                self.asset_dir, "icons", "fantasma.png")).convert_alpha(),
+            (50, 50)
+        )
+        
+        # Ícone do poder fantasma para HUD
+        self.ghost_icon_img = pygame.transform.scale(
+            pygame.image.load(os.path.join(
+                self.asset_dir, "icons", "fantasma.png")).convert_alpha(),
+            (40, 40)
+        )
 
         # Explosão
-        #self.track_img = pygame.transform.scale(
-            #pygame.image.load(os.path.join(
-                #self.asset_dir, "cars", "explosao.png")).convert(),
-            #(80, 120)
-        #)
+        # self.track_img = pygame.transform.scale(
+        #     pygame.image.load(os.path.join(
+        #         self.asset_dir, "cars", "explosao.png")).convert(),
+        #     (80, 120)
+        # )
+
+    def get_ghost_power_image(self):
+        """Retorna a imagem do poder fantasma que aparece na pista."""
+        return self.ghost_power_img
+
+    def get_ghost_icon_image(self):
+        """Retorna o ícone do poder fantasma para a HUD."""
+        return self.ghost_icon_img
