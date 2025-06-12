@@ -1,6 +1,5 @@
 import pygame
 
-
 class RestartScreen:
     def __init__(self, screen, font):
         self.screen = screen

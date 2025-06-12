@@ -1,5 +1,3 @@
-# entities/track.py
-
 import pygame
 
 class Track:

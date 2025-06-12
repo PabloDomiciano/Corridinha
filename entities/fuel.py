@@ -12,14 +12,12 @@ class FuelPickup:
 
         # Inicializando a hitbox para combustível
         self.hitbox = Hitbox()
-        self.hitbox.set_rect(
-            self.rect.width, self.rect.height, self.rect.x, self.rect.y)
+        self.hitbox.set_rect(self.rect.width, self.rect.height, self.rect.x, self.rect.y)
 
     def update(self):
         # O combustível desce pela tela
         self.rect.y += self.speed
-        self.hitbox.set_rect(
-            self.rect.width, self.rect.height, self.rect.x, self.rect.y)
+        self.hitbox.set_rect(self.rect.width, self.rect.height, self.rect.x, self.rect.y)
 
     def check_collision(self, player):
         # Verifica a colisão com a hitbox do jogador

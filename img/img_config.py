@@ -1,5 +1,3 @@
-# img/img_config.py
-
 import pygame
 import os
 

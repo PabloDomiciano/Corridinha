@@ -44,6 +44,3 @@ class Player(Carro):
         # Desenha o carro
         super().draw(screen)  # Chama o método draw da classe Carro para desenhar a imagem
 
-        # Opcional: Desenha o combustível (Exemplo simples)
-        pygame.draw.rect(screen, (0, 255, 0), (10, 10, self.fuel, 20))
-

@@ -1,5 +1,3 @@
-# ui/screen.py
-
 import pygame
 
 class Screen:
