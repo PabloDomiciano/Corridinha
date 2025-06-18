@@ -2,7 +2,7 @@ import pygame
 import random
 from entities.player import Player
 from entities.track import Track
-from entities.fuel import FuelPickup
+from entities.pickups.fuel import FuelPickup
 from entities.enemy_car import EnemyCar
 
 

@@ -28,16 +28,14 @@ class Player(Carro):
             if keys[pygame.K_DOWN] and self.rect.y < self.screen_height - self.rect.height:
                 self.rect.y += self.speed
 
-            # Atualiza a posição da hitbox conforme o carro se move
             self.hitbox.set_rect(
                 self.rect.width, self.rect.height, self.rect.x, self.rect.y)
 
-            # Consumir combustível
             self.fuel -= self.fuel_consumption_rate
             if self.fuel < 0:
                 self.fuel = 0
         else:
-            # Se o combustível acabar, o carro não se move mais
+            
             pass
 
     def draw(self, screen):

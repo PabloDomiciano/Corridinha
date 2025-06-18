@@ -1,5 +1,5 @@
 import pygame
-from entities.pickup import Pickup  # supondo que exista uma classe base Pickup
+from entities.pickups.base_pickup import Pickup  # supondo que exista uma classe base Pickup
 
 class SpeedBoost(Pickup):
     def __init__(self, image, x, screen_height):

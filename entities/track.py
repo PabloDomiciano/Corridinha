@@ -1,5 +1,4 @@
 # entities/track.py
-
 import pygame
 
 class Track:
@@ -9,7 +8,6 @@ class Track:
         self.y1 = 0
         self.y2 = -self.height
         self.speed = 5  # Velocidade da pista
-
         self.screen_height = screen_height
 
     def update(self):
