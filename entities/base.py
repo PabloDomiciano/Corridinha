@@ -1,4 +1,3 @@
-
 class BaseEntity:
     def __init__(self, image, x_pos, y_pos):
         self.image = image

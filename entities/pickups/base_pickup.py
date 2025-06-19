@@ -1,4 +1,3 @@
-
 from entities.base import BaseEntity
 from entities.hitbox import Hitbox
 
@@ -35,4 +34,4 @@ class BasePickup(BaseEntity):
 
     def draw(self, surface):
         super().draw(surface)
-        self.hitbox.draw_hitbox(surface)  # Pode remover se não quiser visualizar hitbox
+        self.hitbox.draw_hitbox(surface) 
