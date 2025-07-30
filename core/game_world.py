@@ -1,5 +1,6 @@
 import pygame
 import random
+from entities.pickups.rocket_pickup import RocketPickup
 from entities.player import Player
 from entities.track import Track
 from entities.pickups.fuel import FuelPickup
@@ -30,6 +31,7 @@ class GameWorld:
         self.enemies = []
         self.fuel_pickups = []
         self.ghost_pickups = []
+        self.pickups = []
 
         # Explosão
         self.frozen = False  # Estado global de congelamento
@@ -45,7 +47,7 @@ class GameWorld:
         ]
 
     def update(self, keys):
-            if hasattr(self, 'frozen') and self.frozen:
+            if self.frozen:
                 self.explosion.update()  # Apenas a explosão se atualiza
                 return
                 
@@ -63,11 +65,10 @@ class GameWorld:
                             self.enemies.remove(enemy)
                             self.car.rockets.remove(rocket)
                             break
-                            
-                            
+
     def create_explosion(self, position):
         self.explosion.trigger(position[0], position[1], particle_count=30)
-            
+        
     def freeze_all(self):
         """Congela todos os elementos do jogo"""
         self.frozen = True
@@ -91,7 +92,29 @@ class GameWorld:
                 ghost.frozen = False
             ghost.frozen = True
             
+        for pickup in self.pickups:
+            if not hasattr(pickup, 'frozen'):
+                pickup.frozen = False
+            pickup.frozen = True
             
+    def unfreeze_all(self):
+        """Descongela todos os elementos do jogo"""
+        self.frozen = False
+        self.track.frozen = False
+        self.car.frozen = False
+            
+        for enemy in self.enemies:
+            enemy.frozen = False
+                
+        for fuel in self.fuel_pickups:
+            fuel.frozen = False
+                
+        for ghost in self.ghost_pickups:
+            ghost.frozen = False
+            
+        for pickup in self.pickups:
+            pickup.frozen = False
+    
     def _update_track_and_player(self, keys):
         self.track.update()
         self.car.update(keys)
@@ -132,6 +155,7 @@ class GameWorld:
             enemy_img = random.choice(self.enemy_imgs)
             self.enemies.append(EnemyCar(enemy_img, lane, self.height))
             self.lane_cooldowns[lane] = now  # Atualiza cooldown da pista
+            
 
     def _spawn_and_update_pickups(self):
         current_time = pygame.time.get_ticks()
@@ -166,6 +190,25 @@ class GameWorld:
             ghost.update()
             if ghost.off_screen(self.height):
                 self.ghost_pickups.remove(ghost)
+                
+        # Spawn da bazuca
+        if (random.random() < 0.001 and  # 0.1% de chance
+            len([p for p in self.pickups if isinstance(p, RocketPickup)]) == 0):
+            
+            lane = random.choice(self.road_lanes)
+            self.pickups.append(RocketPickup(
+                self.img_config.rocket_pickup_img, lane, self.height))
+
+        # Atualiza e verifica colisão com pickups (incluindo bazuca)
+        for pickup in self.pickups[:]:
+            pickup.update()
+            
+            if pickup.off_screen(self.height):
+                self.pickups.remove(pickup)
+            elif pickup.check_collision(self.car):
+                if isinstance(pickup, RocketPickup):
+                    self.car.has_rocket = True
+                self.pickups.remove(pickup)
 
     def _spawn_fuel_pickup(self):
         available_lanes = self.enemy_lanes.copy()  # Alterado para enemy_lanes
@@ -207,6 +250,8 @@ class GameWorld:
             fuel.draw(surface)
         for ghost in self.ghost_pickups:
             ghost.draw(surface)
+        for pickup in self.pickups:
+            pickup.draw(surface)
         
         
                 
