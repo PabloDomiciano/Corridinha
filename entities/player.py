@@ -31,16 +31,33 @@ class Player(Carro):
         self.fuel = self.max_fuel
         self.fuel_consumption_rate = 0.05
         
+
         # Sistema de foguetes/bazuca
-        self.has_rocket = False
         self.rockets = []
         self.rocket_cooldown = 0
         self.rocket_icon = self._validate_rocket_icon(rocket_icon)
         self.rocket_icon_pos = (10, 50)
         
+        # Sistema de foguetes temporizado
+        self.rocket_end_time = 0
+        self.rocket_blink_start_offset = 3000  # Começa a piscar 3 segundos antes de acabar
+        self.rocket_blink_interval = 200  # ms entre piscadas
+        self.last_rocket_blink_time = 0
+        self.rocket_blink_visible = True
+        
         # Estado do jogo
         self.frozen = False
         self.hitbox.set_rect(self.rect.width, self.rect.height, self.rect.x, self.rect.y)
+
+        
+        # Estados de power-up
+        self.has_rocket = False
+        self.ghost_power_active = False
+        self.ghost_power_end_time = 0
+        self.blink_start_offset = 3000  # 3 segundos antes de começar a piscar
+        
+        # No método que coleta o pickup:
+        self.has_rocket = True  # Para foguete
 
     def _validate_rocket_icon(self, icon):
         """Cria um ícone padrão se nenhum for fornecido"""
@@ -61,9 +78,43 @@ class Player(Carro):
         if self.frozen:
             return
         
+        current_time = pygame.time.get_ticks()
         self._handle_movement(keys)
         self._handle_rockets(keys)
         self._update_fuel()
+        self.update_rocket_power(current_time)  # Adicione esta linha
+
+    def activate_rocket_power(self, current_time):
+        """Ativa o poder do foguete por 10 segundos"""
+        self.has_rocket = True  # Corrigi o typo aqui (era has_rocket)
+        self.rocket_end_time = current_time + 10000  # 10 segundos
+        self.rocket_blink_visible = True
+        
+    def update_rocket_power(self, current_time):
+        """Atualiza o estado do poder do foguete"""
+        if not self.has_rocket:
+            return
+            
+        remaining_time = self.rocket_end_time - current_time
+        
+        # Desativa quando o tempo acabar
+        if remaining_time <= 0:
+            self.has_rocket = False
+            return
+        
+        # Piscar nos últimos 3 segundos
+        if remaining_time < self.rocket_blink_start_offset:
+            if current_time - self.last_rocket_blink_time > self.rocket_blink_interval:
+                self.rocket_blink_visible = not self.rocket_blink_visible
+                self.last_rocket_blink_time = current_time
+                
+            # Aqui você pode adicionar efeitos visuais (como mudar a cor do ícone)
+            if self.rocket_blink_visible:
+                # Ícone normal
+                pass
+            else:
+                # Ícone piscando (pode ser uma versão mais clara ou transparente)
+                pass
 
     def _handle_movement(self, keys):
         """Controla o movimento do carro"""
@@ -111,23 +162,21 @@ class Player(Carro):
     def draw(self, screen):
         """
         Desenha o jogador e seus componentes na tela
-        
-        Args:
-            screen: Surface onde desenhar
         """
         super().draw(screen)
         
-        # Desenha foguetes
+        # Desenha foguetes primeiro (para ficarem atrás do carro)
         for rocket in self.rockets:
             rocket.draw(screen)
         
-        # Desenha ícone da bazuca
-        if self.has_rocket:
+        # Desenha ícone da bazuca apenas uma vez
+        if self.has_rocket and (not hasattr(self, 'rocket_blink_visible') or self.rocket_blink_visible):
             screen.blit(self.rocket_icon, self.rocket_icon_pos)
             
         # Desenha barra de combustível
         self._draw_fuel_bar(screen)
-
+        
+        
     def _draw_fuel_bar(self, screen):
         """Desenha a barra de combustível na HUD"""
         # Fundo da barra

@@ -28,7 +28,7 @@ class ImgConfig:
         self.car_enemy = self._load_image("cars/car_verde.png", (50, 100), "enemy", alpha=True)
         self.ghost_power_img = self._load_image("icons/fantasma.png", (50, 50), "ghost", alpha=True)
         self.rocket_pickup_img = self._load_image("weapons/rocket.png", (50, 50), "rocket", alpha=True)
-        
+
         # Explosões
         self.explosion_1 = self._load_image("track/explosion_1.png", (60, 60), "explosion", alpha=True)
         self.explosion_2 = self._load_image("track/explosion_2.png", (90, 90), "explosion", alpha=True)

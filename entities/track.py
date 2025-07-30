@@ -2,9 +2,10 @@
 import pygame
 
 class Track:
-    def __init__(self, image, screen_height):
+    def __init__(self, image, screen_height, offset_x=0):
         self.image = image
         self.height = self.image.get_height()
+        self.offset_x = offset_x  # Novo parâmetro para deslocamento
         self.y1 = 0
         self.y2 = -self.height
         self.speed = 5  # Velocidade da pista
@@ -25,5 +26,5 @@ class Track:
                 self.y2 = self.y1 - self.height
 
     def draw(self, surface):
-        surface.blit(self.image, (0, self.y1))
-        surface.blit(self.image, (0, self.y2))
+        surface.blit(self.image, (self.offset_x, self.y1))
+        surface.blit(self.image, (self.offset_x, self.y2))

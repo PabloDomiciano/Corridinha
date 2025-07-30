@@ -1,6 +1,8 @@
 import pygame
 from core.game_world import GameWorld
 from entities.pickups.effects.ghost_effect import GhostPickupEffect
+from entities.player import Player
+from img import img_config
 from img.img_config import ImgConfig
 from ui.hud import HUD
 from ui.screen import Screen
@@ -18,13 +20,10 @@ class GameManager:
         self.screen = Screen(width, height, title)
         self.img_config = ImgConfig(width, height)
         self.game_world = GameWorld(width, height, self.img_config)
-        self.hud = HUD(self.screen.surface, self.game_world.car)
-        
+
+        self.hud = HUD(self.screen.surface, self.game_world.car, self.img_config)
+
         self.ghost_effect = GhostPickupEffect(self.game_world.car)
-        self.ghost_power_active = False
-        self.ghost_power_end_time = 0
-        self.blink_start_offset = 3000
-        
         
         self.player_controls_enabled = True
         self.showing_explosion = False
@@ -75,28 +74,33 @@ class GameManager:
                 break
 
     def _activate_ghost_power(self, current_time):
+        """Ativa o poder fantasma no jogador"""
+        self.game_world.car.ghost_power_active = True
+        self.game_world.car.ghost_power_end_time = current_time + 8000  # 8 segundos
         self.ghost_effect.set_ghost_mode(True)
-        self.ghost_power_active = True
-        self.ghost_power_end_time = current_time + 8000
-
+    
     def _update_ghost_effect(self, current_time):
-        if not self.ghost_power_active:
+        """Atualiza o efeito fantasma"""
+        if not self.game_world.car.ghost_power_active:
             return
-        
-        remaining_time = self.ghost_power_end_time - current_time
-        
-        if remaining_time < self.blink_start_offset:
+            
+        remaining_time = self.game_world.car.ghost_power_end_time - current_time
+            
+        # Ativa piscar nos últimos 3 segundos
+        if remaining_time < self.game_world.car.blink_start_offset:
             self.ghost_effect.is_blinking = True
-            self.ghost_effect._update_blink(current_time)
+            self.ghost_effect.update(current_time)
         else:
             self.ghost_effect.is_blinking = False
-        
+                
+        # Desativa quando o tempo acabar
         if remaining_time <= 0:
             self._deactivate_ghost_power()
 
     def _deactivate_ghost_power(self):
+        """Desativa o poder fantasma"""
+        self.game_world.car.ghost_power_active = False
         self.ghost_effect.set_ghost_mode(False)
-        self.ghost_power_active = False
 
     def _check_game_conditions(self):
         self._check_collisions()
@@ -104,9 +108,16 @@ class GameManager:
         
         
     def _check_collisions(self):
-        ghost_mode_active = self.ghost_power_active and \
-                        pygame.time.get_ticks() < self.ghost_power_end_time
-        
+        # Se não há inimigos, não precisa verificar colisões
+        if not self.game_world.enemies:
+            return
+            
+        # Verifica se o efeito fantasma está ativo no jogador
+        current_time = pygame.time.get_ticks()
+        ghost_mode_active = (hasattr(self.game_world.car, 'ghost_power_active') and 
+                            self.game_world.car.ghost_power_active and 
+                            current_time < self.game_world.car.ghost_power_end_time)
+
         for enemy in self.game_world.enemies[:]:
             if self.game_world.car.check_collision(enemy):
                 if ghost_mode_active:
@@ -123,11 +134,10 @@ class GameManager:
                 # Ativa explosão
                 car_center = self.game_world.car.rect.center
                 self.game_world.explosion.trigger(car_center[0], car_center[1], 50)
-                self.explosion_end_time = pygame.time.get_ticks() + 2000
+                self.explosion_end_time = current_time + 2000
                 self.showing_explosion = True
-                break
-            
-            
+                break  # Sai do loop após a primeira colisão
+
     def _check_fuel(self):
         if self.game_world.car.fuel <= 0:
             print("COMBUSTÍVEL ACABOU! FIM DE JOGO")

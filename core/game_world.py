@@ -155,7 +155,7 @@ class GameWorld:
             enemy_img = random.choice(self.enemy_imgs)
             self.enemies.append(EnemyCar(enemy_img, lane, self.height))
             self.lane_cooldowns[lane] = now  # Atualiza cooldown da pista
-            
+ 
 
     def _spawn_and_update_pickups(self):
         current_time = pygame.time.get_ticks()
@@ -170,7 +170,7 @@ class GameWorld:
         
         # Spawn de ghost
         if (current_time - self.last_pickup_spawn > self.pickup_cooldown and
-            random.random() < 0.002 and 
+            random.random() < 0.003 and 
             (len(self.ghost_pickups) == 0 or self.ghost_pickups[-1].rect.y > 250)):
             
             self._spawn_ghost_pickup()
@@ -207,7 +207,8 @@ class GameWorld:
                 self.pickups.remove(pickup)
             elif pickup.check_collision(self.car):
                 if isinstance(pickup, RocketPickup):
-                    self.car.has_rocket = True
+                    current_time = pygame.time.get_ticks()
+                    self.car.activate_rocket_power(current_time)  # Ativa o foguete por 10 segundos
                 self.pickups.remove(pickup)
 
     def _spawn_fuel_pickup(self):
