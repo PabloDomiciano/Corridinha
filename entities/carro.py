@@ -24,10 +24,11 @@ class Carro(BaseEntity):
         self.hitbox.set_rect(hitbox_width, hitbox_height, hitbox_x, hitbox_y)
 
     def update(self):
-        """Atualiza a hitbox com base na posição."""
-        hitbox_x = self.rect.x + (self.rect.width - self.hitbox.rect.width) / 2
-        hitbox_y = self.rect.y + (self.rect.height - self.hitbox.rect.height) / 2
-        self.hitbox.set_rect(self.hitbox.rect.width, self.hitbox.rect.height, hitbox_x, hitbox_y)
+        if not self.frozen:
+            """Atualiza a hitbox com base na posição."""
+            hitbox_x = self.rect.x + (self.rect.width - self.hitbox.rect.width) / 2
+            hitbox_y = self.rect.y + (self.rect.height - self.hitbox.rect.height) / 2
+            self.hitbox.set_rect(self.hitbox.rect.width, self.hitbox.rect.height, hitbox_x, hitbox_y)
 
     def draw(self, screen):
         """Desenha o carro."""

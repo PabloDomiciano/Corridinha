@@ -63,3 +63,25 @@ class ImgConfig:
             (50, 50)
         )
         
+        
+        
+        self.explosion_1 = pygame.transform.scale(
+            pygame.image.load(os.path.join(self.asset_dir, "track", "explosion_1.png")).convert_alpha(),
+            (60, 60)  # Tamanho inicial
+        )
+
+        self.explosion_2 = pygame.transform.scale(
+            pygame.image.load(os.path.join(self.asset_dir, "track", "explosion_2.png")).convert_alpha(),
+            (90, 90)  # Tamanho médio
+        )
+
+        self.explosion_3 = pygame.transform.scale(
+            pygame.image.load(os.path.join(self.asset_dir, "track", "explosion_3.png")).convert_alpha(),
+            (120, 120)  # Tamanho final
+        )
+        
+        self.rocket_pickup_img = pygame.transform.scale(
+            pygame.image.load(os.path.join(
+                self.asset_dir, "weapons", "rocket.png")).convert_alpha(),
+            (50, 50)
+        )

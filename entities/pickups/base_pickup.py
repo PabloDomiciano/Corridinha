@@ -10,18 +10,20 @@ class BasePickup(BaseEntity):
         # Inicializando a hitbox
         self.hitbox = Hitbox()
         self.update_hitbox()
+        
+        self.frozen = False 
 
     def update_hitbox(self):
-        self.hitbox.set_rect(
-            self.rect.width,
-            self.rect.height,
-            self.rect.x,
-            self.rect.y
-        )
+            self.hitbox.set_rect(
+                self.rect.width,
+                self.rect.height,
+                self.rect.x,
+                self.rect.y
+            )
 
     def update(self):
-        """Movimento padrão: desce na tela"""
-        self.rect.y += self.speed
+        if not self.frozen:
+            self.rect.y += self.speed
         self.update_hitbox()
 
     def check_collision(self, player):

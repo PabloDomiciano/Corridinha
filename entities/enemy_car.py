@@ -7,6 +7,7 @@ class EnemyCar(Carro):
     def __init__(self, image, x_pos, screen_height, speed=3):
         super().__init__(image, x_pos, y_pos=-image.get_height(), speed=speed)
         self.screen_height = screen_height
+        self.frozen = False 
 
         # Inicializa a hitbox para o inimigo com a mesma posição e dimensões do carro
         self.hitbox = Hitbox()
@@ -14,10 +15,11 @@ class EnemyCar(Carro):
             self.rect.width, self.rect.height, self.rect.x, self.rect.y)
 
     def update(self):
-        # Atualiza a posição do carro inimigo
-        self.rect.y += self.speed
-        self.hitbox.set_rect(
-            self.rect.width, self.rect.height, self.rect.x, self.rect.y)
+        if not self.frozen:
+            # Atualiza a posição do carro inimigo
+            self.rect.y += self.speed
+            self.hitbox.set_rect(
+                self.rect.width, self.rect.height, self.rect.x, self.rect.y)
 
     def off_screen(self, height):
         return self.rect.y > height
