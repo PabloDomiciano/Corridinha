@@ -1,8 +1,8 @@
 from entities.pickups.base_pickup import BasePickup
 
 
-class FuelPickup(BasePickup):
+class RocketPickup(BasePickup):
     def __init__(self, image, x_pos, screen_height):
-        # Define a posição inicial acima da tela e herda velocidade padrão (150)
+        # Spawna acima da tela e desce com velocidade padrão
         super().__init__(image, x_pos, y_pos=-image.get_height(), speed=150)
         self.screen_height = screen_height

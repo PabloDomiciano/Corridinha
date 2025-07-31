@@ -8,20 +8,33 @@ from ui.screen import Screen
 class GameManager:
     def __init__(self, width, height, title):
         pygame.init()
+<<<<<<< Updated upstream
         
+=======
+
+>>>>>>> Stashed changes
         # Configurações básicas
         self.width = width
         self.height = height
         self.running = True
         self.fps = 60
         self.clock = pygame.time.Clock()
+<<<<<<< Updated upstream
         
+=======
+
+>>>>>>> Stashed changes
         # Sistemas principais
         self.screen = Screen(width, height, title)
         self.img_config = ImgConfig(width, height)
         self.game_world = GameWorld(width, height, self.img_config)
+<<<<<<< Updated upstream
         self.hud = HUD(self.screen.surface, self.game_world.car)
         
+=======
+        self.hud = HUD(self.screen.surface, self.game_world.car, self.img_config)
+
+>>>>>>> Stashed changes
         # Efeito ghost
         self.ghost_effect = GhostPickupEffect(self.game_world.car)
         self.ghost_power_active = False
@@ -32,6 +45,7 @@ class GameManager:
         """Loop principal do jogo."""
         while self.running:
             current_time = pygame.time.get_ticks()
+<<<<<<< Updated upstream
             
             self._handle_events()
             self._update(current_time)
@@ -40,6 +54,17 @@ class GameManager:
             pygame.display.flip()
             self.clock.tick(self.fps)
         
+=======
+            delta_time = self.clock.get_time() / 1000.0  # Em segundos
+
+            self._handle_events()
+            self._update(current_time, delta_time)
+            self._render()
+
+            pygame.display.flip()
+            self.clock.tick(self.fps)
+
+>>>>>>> Stashed changes
         pygame.quit()
 
     def _handle_events(self):
@@ -48,11 +73,19 @@ class GameManager:
             if event.type == pygame.QUIT:
                 self.running = False
 
+<<<<<<< Updated upstream
     def _update(self, current_time):
         """Atualiza o estado do jogo."""
         keys = pygame.key.get_pressed()
         self.game_world.update(keys)
         
+=======
+    def _update(self, current_time, delta_time):
+        """Atualiza o estado do jogo."""
+        keys = pygame.key.get_pressed()
+        self.game_world.update(keys, delta_time)
+
+>>>>>>> Stashed changes
         self._handle_ghost_power(current_time)
         self._check_game_conditions()
 
@@ -73,23 +106,37 @@ class GameManager:
         """Ativa o poder fantasma."""
         self.ghost_effect.set_ghost_mode(True)
         self.ghost_power_active = True
+<<<<<<< Updated upstream
         self.ghost_power_end_time = current_time + 8000  # 8 segundos de duração
+=======
+        self.ghost_power_end_time = current_time + 8000  # 8 segundos
+>>>>>>> Stashed changes
 
     def _update_ghost_effect(self, current_time):
         """Atualiza o efeito ghost."""
         if not self.ghost_power_active:
             return
+<<<<<<< Updated upstream
             
         remaining_time = self.ghost_power_end_time - current_time
         
         # Ativa piscar quando faltar pouco tempo
+=======
+
+        remaining_time = self.ghost_power_end_time - current_time
+
+>>>>>>> Stashed changes
         if remaining_time < self.blink_start_offset:
             self.ghost_effect.is_blinking = True
             self.ghost_effect.update_blink(current_time)
         else:
             self.ghost_effect.is_blinking = False
+<<<<<<< Updated upstream
         
         # Desativa quando o tempo acabar
+=======
+
+>>>>>>> Stashed changes
         if remaining_time <= 0:
             self._deactivate_ghost_power()
 
