@@ -8,27 +8,29 @@ from ui.hud import HUD
 from ui.screen import Screen
 
 class SideGif:
-    """GIF lateral que desce verticalmente, sem movimentação horizontal"""
-    def __init__(self, frames, x, y, speed=5, frame_duration=400):
+    """GIF lateral que desce verticalmente, com tamanho customizável"""
+    def __init__(self, frames, x, y, speed=5, frame_duration=300, size=None):
         """
         frames: lista de imagens do GIF
         x, y: posição inicial
         speed: velocidade vertical
-        frame_duration: tempo (ms) entre frames, maior = mais lento
+        frame_duration: tempo (ms) entre frames
+        size: tupla (largura, altura) opcional para redimensionar cada GIF
         """
         self.frames = frames
+        if size:
+            self.frames = [pygame.transform.scale(f, size) for f in frames]
         self.x = x
         self.y = y
         self.speed = speed
         self.frame_duration = frame_duration
         self.current_frame = 0
         self.last_update = pygame.time.get_ticks()
-        self.total_frames = len(frames)
+        self.total_frames = len(self.frames)
         self.screen_height = pygame.display.get_surface().get_height()
 
     def update(self):
         now = pygame.time.get_ticks()
-        # Troca de frame lenta
         if self.total_frames > 0 and now - self.last_update >= self.frame_duration:
             self.current_frame = (self.current_frame + 1) % self.total_frames
             self.last_update = now
@@ -57,7 +59,6 @@ class GameManager:
         self.img_config = ImgConfig(width, height)
         self.game_world = GameWorld(width, height, self.img_config)
 
-        # Pontuação
         self.score = 0
         self.start_ticks = pygame.time.get_ticks()
         self.game_over = False
@@ -69,20 +70,39 @@ class GameManager:
         self.showing_explosion = False
         self.explosion_end_time = 0
 
-        # --- GIFs laterais --- #
+        # GIFs laterais
         self.side_gifs_list = []
         self._init_side_gifs()
 
     def _init_side_gifs(self):
-        gif_keys = list(self.img_config.side_gifs.keys())
-        if not gif_keys:
+        """Cria GIFs laterais com tamanho individual"""
+        if not self.img_config.side_gifs:
+            print("Nenhum GIF encontrado.")
             return
-        # 3 GIFs do lado esquerdo e 3 do direito
-        for i in range(5):
-            left_frames = self.img_config.side_gifs[random.choice(gif_keys)]
-            right_frames = self.img_config.side_gifs[random.choice(gif_keys)]
-            self.side_gifs_list.append(SideGif(left_frames, x=6, y=random.randint(-200, self.height)))
-            self.side_gifs_list.append(SideGif(right_frames, x=self.width - 60, y=random.randint(-200, self.height)))
+
+        sizes = {
+            "coqueiro": (40, 80),    # tamanho específico para 'coqueiro'
+            "default": (40, 40),     # tamanho padrão para outros GIFs
+        }
+
+        for folder_name, frames in self.img_config.side_gifs.items():
+            if not frames:
+                continue
+            size = sizes.get(folder_name, sizes["default"])
+
+            # Lado esquerdo
+            x_left = 6
+            y_left = random.randint(-200, self.height - 50)
+
+            # Lado direito
+            x_right = self.width - size[0] - 6
+            y_right = random.randint(-200, self.height - 50)
+            # evita que fiquem muito próximos verticalmente
+            while abs(y_right - y_left) < 80:
+                y_right = random.randint(-200, self.height - 50)
+
+            self.side_gifs_list.append(SideGif(frames, x_left, y_left, speed=5, frame_duration=300, size=size))
+            self.side_gifs_list.append(SideGif(frames, x_right, y_right, speed=5, frame_duration=300, size=size))
 
     def run(self):
         while self.running:
@@ -110,7 +130,7 @@ class GameManager:
         # Atualiza GIFs laterais
         for gif in self.side_gifs_list:
             gif.update()
-        
+
         if not self.showing_explosion and not self.game_over:
             self._check_game_conditions()
         
@@ -183,7 +203,7 @@ class GameManager:
         self.screen.surface.fill((0, 0, 0))
         self.game_world.draw(self.screen.surface)
 
-        # GIFs laterais
+        # Desenha GIFs laterais
         for gif in self.side_gifs_list:
             gif.draw(self.screen.surface)
 
