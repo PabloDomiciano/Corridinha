@@ -20,4 +20,4 @@ class SpeedBoost(Pickup):
         return self.rect.y > screen_height
     def on_collision(self, car):
         print("SPEED BOOST ATIVADO!")
-        car.speed_boost(2.0, duration=3000)  # Supondo que o carro tenha um método `speed_boost`
+        car.speed_boost(2.0, duration=3000) 

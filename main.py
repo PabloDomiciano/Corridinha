@@ -3,4 +3,4 @@ from core.game_manager import GameManager
 
 if __name__ == "__main__":
     game = GameManager(WIDTH, HEIGHT, TITLE)
-    game.run()
+    game.run() 
