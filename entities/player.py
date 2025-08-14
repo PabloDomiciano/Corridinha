@@ -72,7 +72,7 @@ class Player(Carro):
         # Configurações da bazuca no carro
         self.rocket_on_car_img = None
         self.rocket_on_car_offset = (0, 0)  # Será calculado dinamicamente
-        self.rocket_scale_factor = 0.7  # 70% da largura do carroo
+        self.rocket_scale_factor = 1.0  # 100% da largura do carro
 
     def _validate_rocket_icon(self, icon):
         """Cria um ícone padrão se nenhum for fornecido"""
@@ -148,25 +148,30 @@ class Player(Carro):
 
         if hasattr(self, "game_manager") and hasattr(self.game_manager, "img_config"):
             original_img = self.game_manager.img_config.rocket_pickup_img
-
+            
+            # Aumenta o fator de escala (de 0.7 para 0.9 por exemplo)
+            self.rocket_scale_factor = 1.5  # Ajuste este valor conforme necessário
+            
             # Calcula o tamanho proporcional ao carro
             rocket_width = int(self.rect.width * self.rocket_scale_factor)
             rocket_height = int(
                 rocket_width * original_img.get_height() / original_img.get_width()
             )
-
-            # Redimensiona e rotaciona a imagem
-            self.rocket_on_car_img = pygame.transform.scale(
+            
+            # Redimensiona a imagem
+            scaled_img = pygame.transform.scale(
                 original_img, (rocket_width, rocket_height)
             )
-            self.rocket_on_car_img = pygame.transform.rotate(
-                self.rocket_on_car_img, -90
-            )  # Rotaciona para ficar na horizontal
-
-            # Calcula a posição de offset (centralizado no telhado)
+            
+            # Remove a rotação ou ajusta para 0 graus para ficar vertical
+            self.rocket_on_car_img = scaled_img  # Sem rotação
+            # Ou se precisar de pequeno ajuste:
+            # self.rocket_on_car_img = pygame.transform.rotate(scaled_img, 0)
+            
+            # Ajusta o offset para posicionar verticalmente no carro
             self.rocket_on_car_offset = (
                 (self.rect.width - rocket_width) // 2,  # Centralizado horizontalmente
-                -rocket_height + 10,  # 10px acima do topo do carro
+                -rocket_height + 75  # 75 pixels acima do topo do carro
             )
 
     def update_rocket_power(self, current_time):
@@ -272,18 +277,19 @@ class Player(Carro):
         if not visible:
             return
 
-        # Posiciona no centro do telhado
-        rocket_x = self.rect.centerx - self.rocket_on_car_img.get_width() // 2
-        rocket_y = self.rect.top - self.rocket_on_car_img.get_height() + 15
+        # Calcula a posição para colocar no telhado do carro
+        rocket_x = self.rect.x + self.rocket_on_car_offset[0]
+        rocket_y = self.rect.y + self.rocket_on_car_offset[1]
         
         # Aplica efeito visual se estiver perto de acabar
         if (hasattr(self, "last_rocket_blink_time") and 
             pygame.time.get_ticks() - self.last_rocket_blink_time < 100):
-            self.rocket_on_car_img.set_alpha(180)  # Efeito de piscar
+            # Cria uma cópia da imagem para aplicar transparência
+            temp_img = self.rocket_on_car_img.copy()
+            temp_img.set_alpha(180)  # Efeito de piscar
+            screen.blit(temp_img, (rocket_x, rocket_y))
         else:
-            self.rocket_on_car_img.set_alpha(255)  # Visibilidade total
-        
-        screen.blit(self.rocket_on_car_img, (rocket_x, rocket_y))
+            screen.blit(self.rocket_on_car_img, (rocket_x, rocket_y))
 
 
     def _draw_hud_elements(self, screen):

@@ -1,10 +1,11 @@
 import pygame
 
+
 class GhostPickupEffect:
     def __init__(self, entity):
         """
         Gerencia apenas os efeitos visuais e de colisão do poder fantasma.
-        
+
         Args:
             entity: Referência à entidade que receberá o efeito (deve ter:
                     - image (Surface)
@@ -37,21 +38,23 @@ class GhostPickupEffect:
     def _create_ghost_image(self):
         """Cria versão fantasma semi-transparente."""
         ghost_img = self.normal_image.copy()
-        ghost_img.fill((255, 255, 255, self.ghost_alpha), 
-                      special_flags=pygame.BLEND_RGBA_MULT)
+        ghost_img.fill(
+            (255, 255, 255, self.ghost_alpha), special_flags=pygame.BLEND_RGBA_MULT
+        )
         return ghost_img
 
     def _create_blank_image(self):
         """Cria imagem totalmente transparente."""
-        blank = pygame.Surface((self.entity.rect.width, self.entity.rect.height), 
-                             pygame.SRCALPHA)
+        blank = pygame.Surface(
+            (self.entity.rect.width, self.entity.rect.height), pygame.SRCALPHA
+        )
         blank.fill((0, 0, 0, 0))
         return blank
 
     def set_ghost_mode(self, active, blinking=False):
         """
         Ativa/desativa o modo fantasma.
-        
+
         Args:
             active: True para ativar o efeito fantasma
             blinking: True para ativar o efeito de piscar
@@ -82,26 +85,28 @@ class GhostPickupEffect:
 
             # Alterna entre imagem fantasma/normal e transparente
             if self.blink_visible:
-                self.entity.image = self.ghost_image if self.is_ghost else self.normal_image
+                self.entity.image = (
+                    self.ghost_image if self.is_ghost else self.normal_image
+                )
             else:
                 self.entity.image = self.blank_image
 
     def check_collision(self, other):
         """
         Verifica colisão, ignorando se estiver no modo fantasma.
-        
+
         Args:
             other: Outra entidade para verificar colisão
-            
+
         Returns:
             bool: True se houve colisão e não está no modo fantasma
         """
         if self.is_ghost:
             return False
-            
+
         # Prioriza usar hitbox se disponível
-        if hasattr(self.entity, 'hitbox') and hasattr(other, 'rect'):
+        if hasattr(self.entity, "hitbox") and hasattr(other, "rect"):
             return self.entity.hitbox.check_rect_collision(other)
-            
+
         # Fallback para colisão simples de rect
         return self.entity.rect.colliderect(other.rect)
