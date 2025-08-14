@@ -59,7 +59,6 @@ class GameWorld:
         self._spawn_and_update_pickups()
         self.explosion.update()
 
-        # Verifica colisões de foguetes
         if hasattr(self.car, "rockets"):
             for rocket in self.car.rockets[:]:
                 for enemy in self.enemies[:]:
@@ -68,6 +67,9 @@ class GameWorld:
                         self.enemies.remove(enemy)
                         self.car.rockets.remove(rocket)
                         break
+                # Remove foguetes que saíram da tela
+                if rocket.rect.bottom < 0:
+                    self.car.rockets.remove(rocket)
 
         # Verifica colisões diretas do carro com inimigos
         for enemy in self.enemies[:]:
@@ -80,7 +82,9 @@ class GameWorld:
         self.explosion.trigger(position[0], position[1], particle_count=30)
 
         # Toca o som da explosão
-        if hasattr(self, "game_manager") and hasattr(self.game_manager, "explosion_sound"):
+        if hasattr(self, "game_manager") and hasattr(
+            self.game_manager, "explosion_sound"
+        ):
             self.game_manager.explosion_sound.play()
 
     def freeze_all(self):
@@ -287,4 +291,3 @@ class GameWorld:
         self.car.draw(surface)
         # Explosão sobre os elementos
         self.explosion.draw(surface)
-       

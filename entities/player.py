@@ -60,6 +60,8 @@ class Player(Carro):
         self.ghost_power_active = False
         self.ghost_power_end_time = 0
         self.blink_start_offset = 3000  # 3 segundos antes de começar a piscar
+        self.ghost_effect = None  # Será inicializado depois
+        self.original_image = image.copy()  # Guarda uma cópia da imagem original
 
         # No método que coleta o pickup:
         self.has_rocket = True  # Para foguete
@@ -148,30 +150,30 @@ class Player(Carro):
 
         if hasattr(self, "game_manager") and hasattr(self.game_manager, "img_config"):
             original_img = self.game_manager.img_config.rocket_pickup_img
-            
+
             # Aumenta o fator de escala (de 0.7 para 0.9 por exemplo)
             self.rocket_scale_factor = 1.5  # Ajuste este valor conforme necessário
-            
+
             # Calcula o tamanho proporcional ao carro
             rocket_width = int(self.rect.width * self.rocket_scale_factor)
             rocket_height = int(
                 rocket_width * original_img.get_height() / original_img.get_width()
             )
-            
+
             # Redimensiona a imagem
             scaled_img = pygame.transform.scale(
                 original_img, (rocket_width, rocket_height)
             )
-            
+
             # Remove a rotação ou ajusta para 0 graus para ficar vertical
             self.rocket_on_car_img = scaled_img  # Sem rotação
             # Ou se precisar de pequeno ajuste:
             # self.rocket_on_car_img = pygame.transform.rotate(scaled_img, 0)
-            
+
             # Ajusta o offset para posicionar verticalmente no carro
             self.rocket_on_car_offset = (
                 (self.rect.width - rocket_width) // 2,  # Centralizado horizontalmente
-                -rocket_height + 75  # 75 pixels acima do topo do carro
+                -rocket_height + 75,  # 75 pixels acima do topo do carro
             )
 
     def update_rocket_power(self, current_time):
@@ -243,10 +245,28 @@ class Player(Carro):
             self.fuel = max(0, self.fuel)  # Garante não ficar negativo
 
     def fire_rocket(self):
-        """Dispara um novo foguete com som"""
+        """Dispara um novo foguete com sprite personalizada"""
+        if hasattr(self, "game_manager") and hasattr(self.game_manager, "img_config"):
+            # Usa a imagem do foguete do img_config
+            original_img = self.game_manager.img_config.rocket_pickup_img
+            # Redimensiona para o tamanho desejado
+            rocket_img = pygame.transform.scale(original_img, (30, 60))
+            # Rotaciona se necessário (90 graus para ficar vertical)
+            rocket_img = pygame.transform.rotate(rocket_img, 0)
+        else:
+            # Fallback caso não tenha acesso ao game_manager
+            rocket_img = None
+
         new_rocket = Rocket(self.rect.centerx, self.rect.top)
+
+        # Atribui a imagem personalizada se disponível
+        if rocket_img:
+            new_rocket.image = rocket_img
+            new_rocket.rect = new_rocket.image.get_rect(center=new_rocket.rect.center)
+
         self.rockets.append(new_rocket)
-        # Toca o som do foguete (acessado através do GameManager)
+
+        # Toca o som do foguete
         if hasattr(self, "game_manager") and hasattr(self.game_manager, "rocket_sound"):
             self.game_manager.rocket_sound.play()
 
@@ -280,10 +300,12 @@ class Player(Carro):
         # Calcula a posição para colocar no telhado do carro
         rocket_x = self.rect.x + self.rocket_on_car_offset[0]
         rocket_y = self.rect.y + self.rocket_on_car_offset[1]
-        
+
         # Aplica efeito visual se estiver perto de acabar
-        if (hasattr(self, "last_rocket_blink_time") and 
-            pygame.time.get_ticks() - self.last_rocket_blink_time < 100):
+        if (
+            hasattr(self, "last_rocket_blink_time")
+            and pygame.time.get_ticks() - self.last_rocket_blink_time < 100
+        ):
             # Cria uma cópia da imagem para aplicar transparência
             temp_img = self.rocket_on_car_img.copy()
             temp_img.set_alpha(180)  # Efeito de piscar
@@ -291,15 +313,21 @@ class Player(Carro):
         else:
             screen.blit(self.rocket_on_car_img, (rocket_x, rocket_y))
 
-
     def _draw_hud_elements(self, screen):
         """Desenha todos os elementos do HUD"""
         # Ícone da bazuca
-        if self.has_rocket and (not hasattr(self, "rocket_blink_visible") or self.rocket_blink_visible):
-            alpha = 128 if hasattr(self, "rocket_blink_visible") and not self.rocket_blink_visible else 255
+        if self.has_rocket and (
+            not hasattr(self, "rocket_blink_visible") or self.rocket_blink_visible
+        ):
+            alpha = (
+                128
+                if hasattr(self, "rocket_blink_visible")
+                and not self.rocket_blink_visible
+                else 255
+            )
             self.rocket_icon.set_alpha(alpha)
             screen.blit(self.rocket_icon, self.rocket_icon_pos)
-        
+
         # Barra de combustível
         self._draw_fuel_bar(screen)
 
@@ -348,3 +376,38 @@ class Player(Carro):
             dummy_sound = pygame.mixer.Sound(buffer=bytearray(100))
             self.car_acceleration_sound = dummy_sound
             self.car_idle_sound = dummy_sound
+
+    def activate_ghost_power(self, current_time, duration=8000):
+        """Ativa o poder fantasma por um tempo determinado"""
+        self.ghost_power_active = True
+        self.ghost_power_end_time = current_time + duration
+
+        # Aplica o efeito visual imediatamente
+        if self.ghost_effect:
+            self.ghost_effect.set_ghost_mode(True)
+
+        # Toca o som do pickup
+        if hasattr(self, "game_manager") and hasattr(
+            self.game_manager, "ghost_pickup_sound"
+        ):
+            self.game_manager.ghost_pickup_sound.play()
+
+    def update_ghost_power(self, current_time):
+        """Atualiza o estado do poder fantasma"""
+        if not self.ghost_power_active:
+            return
+
+        remaining_time = self.ghost_power_end_time - current_time
+
+        # Desativa quando o tempo acabar
+        if remaining_time <= 0:
+            self.ghost_power_active = False
+            if self.ghost_effect:
+                self.ghost_effect.set_ghost_mode(False)
+            return
+
+        # Ativa piscar nos últimos 3 segundos
+        if remaining_time < self.blink_start_offset:
+            if self.ghost_effect:
+                self.ghost_effect.is_blinking = True
+                self.ghost_effect.update(current_time)

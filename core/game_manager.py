@@ -45,6 +45,7 @@ class GameManager:
             lambda: self.score,
         )
 
+        self.game_world.car.ghost_effect = GhostPickupEffect(self.game_world.car)
         self.ghost_effect = GhostPickupEffect(self.game_world.car)
 
         self.player_controls_enabled = True
