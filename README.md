@@ -2,6 +2,9 @@
 
 - Implementar a tela de menu e restart;
 - Salvar a pontuação no menu;
+- Pickup pontuação em dobro
+- Pickup metralhadora (4 tiros carro, 6 onibus)
+- spawn carros estaticos
 
 
 # Corridinha Maluca
