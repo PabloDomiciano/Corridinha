@@ -95,6 +95,7 @@ class Player(Carro):
         self._handle_rockets(keys)
         self._update_fuel()
         self.update_rocket_power(current_time)
+        self.update_ghost_power(current_time)
         self._update_sound(keys)  # Adiciona atualização de som
 
     def _update_sound(self, keys):
@@ -410,4 +411,10 @@ class Player(Carro):
         if remaining_time < self.blink_start_offset:
             if self.ghost_effect:
                 self.ghost_effect.is_blinking = True
-                self.ghost_effect.update(current_time)
+        else:
+            if self.ghost_effect:
+                self.ghost_effect.is_blinking = False
+
+        # Atualiza o efeito visual (SEMPRE atualize, não só quando piscando)
+        if self.ghost_effect:
+            self.ghost_effect.update(current_time)

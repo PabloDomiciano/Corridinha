@@ -1,16 +1,12 @@
 import pygame
 
-
 class GhostPickupEffect:
     def __init__(self, entity):
         """
         Gerencia apenas os efeitos visuais e de colisão do poder fantasma.
 
         Args:
-            entity: Referência à entidade que receberá o efeito (deve ter:
-                    - image (Surface)
-                    - rect (Rect)
-                    - [opcional] hitbox (Hitbox))
+            entity: Referência à entidade que receberá o efeito
         """
         self.entity = entity
 
@@ -22,7 +18,7 @@ class GhostPickupEffect:
         # Configurações de tempo
         self.blink_interval = 200  # ms entre piscadas
         self.last_blink_time = 0
-
+        
         # Configurações visuais
         self.ghost_alpha = 128  # Transparência do modo fantasma
 
@@ -38,9 +34,7 @@ class GhostPickupEffect:
     def _create_ghost_image(self):
         """Cria versão fantasma semi-transparente."""
         ghost_img = self.normal_image.copy()
-        ghost_img.fill(
-            (255, 255, 255, self.ghost_alpha), special_flags=pygame.BLEND_RGBA_MULT
-        )
+        ghost_img.set_alpha(self.ghost_alpha)
         return ghost_img
 
     def _create_blank_image(self):
@@ -76,6 +70,9 @@ class GhostPickupEffect:
         """
         if self.is_blinking:
             self._update_blink(current_time)
+        elif self.is_ghost:
+            # Mantém a imagem fantasma mesmo quando não está piscando
+            self.entity.image = self.ghost_image
 
     def _update_blink(self, current_time):
         """Gerencia a lógica do piscar."""

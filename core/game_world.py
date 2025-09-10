@@ -51,13 +51,16 @@ class GameWorld:
 
     def update(self, keys):
         if self.frozen:
-            self.explosion.update()  # Apenas a explosão se atualiza
+            self.explosion.update()  
             return
 
+        current_time = pygame.time.get_ticks() 
+        
         self._update_track_and_player(keys)
         self._spawn_and_update_enemies()
         self._spawn_and_update_pickups()
         self.explosion.update()
+        self.car.update_ghost_power(current_time)
 
         if hasattr(self.car, "rockets"):
             for rocket in self.car.rockets[:]:
@@ -70,13 +73,6 @@ class GameWorld:
                 # Remove foguetes que saíram da tela
                 if rocket.rect.bottom < 0:
                     self.car.rockets.remove(rocket)
-
-        # Verifica colisões diretas do carro com inimigos
-        for enemy in self.enemies[:]:
-            if self.car.rect.colliderect(enemy.rect):
-                self.create_explosion(enemy.rect.center)
-                # Aqui você pode colocar lógica de fim de jogo, perder vida, etc.
-                self.freeze_all()  # Exemplo: congela tudo
 
     def create_explosion(self, position):
         self.explosion.trigger(position[0], position[1], particle_count=30)
@@ -191,7 +187,7 @@ class GameWorld:
         # Spawn de ghost
         if (
             current_time - self.last_pickup_spawn > self.pickup_cooldown
-            and random.random() < 0.005
+            and random.random() < 0.003
             and (len(self.ghost_pickups) == 0 or self.ghost_pickups[-1].rect.y > 250)
         ):
             self._spawn_ghost_pickup()
@@ -220,7 +216,7 @@ class GameWorld:
 
         # Spawn da bazuca
         if (
-            random.random() < 0.005
+            random.random() < 0.001
             and len([p for p in self.pickups if isinstance(p, RocketPickup)]) == 0
         ):
             lane = random.choice(self.road_lanes)

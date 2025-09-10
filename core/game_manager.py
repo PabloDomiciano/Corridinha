@@ -9,6 +9,11 @@ from img.img_config import ImgConfig
 from ui.hud import HUD
 from ui.screen import Screen
 
+# Adicione estas importações
+from utils.score_manager import ScoreManager
+from ui.highscore_screen import HighscoreScreen
+from ui.leaderboard_screen import LeaderboardScreen
+
 
 class GameManager:
     def __init__(self, width, height, title):
@@ -35,6 +40,12 @@ class GameManager:
         self.game_over = False
         self.game_over_time = None
 
+        # Sistema de Highscore (ADICIONADO)
+        self.score_manager = ScoreManager()
+        self.highscore_screen = HighscoreScreen(self.score_manager)
+        self.leaderboard_screen = LeaderboardScreen(self.score_manager)
+        self.current_state = "start_screen"
+
         # Carrega os sons
         self._load_sounds()
 
@@ -46,7 +57,6 @@ class GameManager:
         )
 
         self.game_world.car.ghost_effect = GhostPickupEffect(self.game_world.car)
-        self.ghost_effect = GhostPickupEffect(self.game_world.car)
 
         self.player_controls_enabled = True
         self.showing_explosion = False
@@ -107,33 +117,102 @@ class GameManager:
             if event.type == pygame.QUIT:
                 self.running = False
 
+            # Tela inicial
+            if self.current_state == "start_screen":
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        self.current_state = "game"
+                        self._restart_game()  # Reinicia o jogo ao começar
+                    elif event.key == pygame.K_l:
+                        self.current_state = "leaderboard"
+                    elif event.key == pygame.K_ESCAPE:
+                        self.running = False
+
+            # Tela de input de highscore
+            elif self.current_state == "highscore_input":
+                result = self.highscore_screen.handle_event(event)  # continua tratando a digitação
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        # Finaliza input e volta para o menu inicial
+                        self.current_state = "start_screen"
+                    elif event.key == pygame.K_ESCAPE:
+                        self.running = False
+
+            # Tela de leaderboard
+            elif self.current_state == "leaderboard":
+                result = self.leaderboard_screen.handle_event(event)
+                if result == "menu":
+                    self.current_state = "start_screen"
+
+            # Tela de game over
+            elif self.current_state == "game_over":
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_r:
+                        self._restart_game()
+                    elif event.key == pygame.K_l:
+                        self.current_state = "leaderboard"
+                    elif event.key == pygame.K_ESCAPE or event.key == pygame.K_RETURN:
+                        self.current_state = "start_screen"
+
+
     def _update(self, current_time):
-        # Atualiza a pontuação se o jogo não terminou
-        if not self.game_over:
-            self.score = (current_time - self.start_ticks) // 100
+        # Atualiza apenas se estiver no estado de jogo
+        if self.current_state == "game":
+            if not self.game_over:
+                # Calcula pontuação baseada em tempo (segundos * 10) ou distância
+                elapsed_seconds = (current_time - self.start_ticks) // 1000
+                self.score = elapsed_seconds * 10  # 10 pontos por segundo
+                
+                
+                self._check_rocket_explosion()
 
-        # Atualiza o mundo do jogo com as teclas pressionadas
-        keys = pygame.key.get_pressed() if self.player_controls_enabled else {}
-        self.game_world.update(keys)
+            # Atualiza o mundo do jogo com as teclas pressionadas
+            keys = pygame.key.get_pressed() if self.player_controls_enabled else {}
+            self.game_world.update(keys)
 
-        # Atualiza os GIFs laterais
-        for gif in self.side_gifs_list:
-            gif.update()
+            # Atualiza os GIFs laterais
+            for gif in self.side_gifs_list:
+                gif.update()
 
-        # Gerencia o poder fantasma
-        self._handle_ghost_power(current_time)
+            # Gerencia o poder fantasma
+            self._handle_ghost_power(current_time)
 
-        # Verifica condições do jogo se não estiver em explosão ou game over
-        if not self.showing_explosion and not self.game_over:
-            self._check_game_conditions()
+            # Verifica condições do jogo se não estiver em explosão ou game over
+            if not self.showing_explosion and not self.game_over:
+                self._check_game_conditions()
 
-        # Encerra o jogo após 3 segundos do game over
-        if self.game_over and current_time - self.game_over_time > 3000:
-            self.running = False
+            # Transição para highscore_input ou game_over após 3 segundos
+            if self.game_over and current_time - self.game_over_time > 3000:
+                # VERIFICA se é uma pontuação alta ANTES de mudar de estado
+                if self.score_manager.is_highscore(self.score):
+                    self.current_state = "highscore_input"
+                    self.highscore_screen.active = True  # Ativa a tela de highscore
+                    print(f"Nova pontuação alta! Score: {self.score}")  # DEBUG
+                else:
+                    self.current_state = "game_over"
+                    print(f"Pontuação não é highscore: {self.score}")  # DEBUG
 
-        # Encerra o jogo quando terminar a explosão
-        if self.showing_explosion and current_time >= self.explosion_end_time:
-            self.running = False
+            # CORREÇÃO: Não encerrar o jogo após explosão, apenas mudar de estado
+            if (self.showing_explosion and current_time >= self.explosion_end_time
+                and self.current_state == "game"):
+                self.showing_explosion = False
+                # Não encerre o jogo, apenas processe a transição de estado
+                if self.game_over:
+                    if self.score_manager.is_highscore(self.score):
+                        self.current_state = "highscore_input"
+                        self.highscore_screen.active = True
+                    else:
+                        self.current_state = "game_over"
+
+        # ADICIONADO: Atualiza a tela de highscore se necessário
+        elif self.current_state == "highscore_input":
+            self.highscore_screen.update()
+
+        # ADICIONADO: Para estados de menu, não faz nada especial
+        elif self.current_state in ["start_screen", "leaderboard", "game_over"]:
+            # Esses estados não precisam de atualizações de jogo
+            pass
+        
 
     def _handle_ghost_power(self, current_time):
         self._check_ghost_pickup_collision(current_time)
@@ -144,13 +223,21 @@ class GameManager:
             if pickup.check_collision(self.game_world.car):
                 self._activate_ghost_power(current_time)
                 self.game_world.ghost_pickups.remove(pickup)
+                # Toca o som do pickup
+                if hasattr(self, "ghost_pickup_sound"):
+                    self.ghost_pickup_sound.play()
                 break
 
     def _activate_ghost_power(self, current_time):
         """Ativa o poder fantasma no jogador"""
+        print("Ghost power ATIVADO!")  # DEBUG
         self.game_world.car.ghost_power_active = True
         self.game_world.car.ghost_power_end_time = current_time + 8000  # 8 segundos
-        self.ghost_effect.set_ghost_mode(True)
+
+        if self.game_world.car.ghost_effect:
+            self.game_world.car.ghost_effect.set_ghost_mode(True)
+        else:
+            print("ERRO: ghost_effect não encontrado!")
 
     def _update_ghost_effect(self, current_time):
         """Atualiza o efeito fantasma"""
@@ -161,10 +248,12 @@ class GameManager:
 
         # Ativa piscar nos últimos 3 segundos
         if remaining_time < self.game_world.car.blink_start_offset:
-            self.ghost_effect.is_blinking = True
-            self.ghost_effect.update(current_time)
+            if self.game_world.car.ghost_effect:
+                self.game_world.car.ghost_effect.is_blinking = True
+                self.game_world.car.ghost_effect.update(current_time)
         else:
-            self.ghost_effect.is_blinking = False
+            if self.game_world.car.ghost_effect:
+                self.game_world.car.ghost_effect.is_blinking = False
 
         # Desativa quando o tempo acabar
         if remaining_time <= 0:
@@ -173,7 +262,8 @@ class GameManager:
     def _deactivate_ghost_power(self):
         """Desativa o poder fantasma"""
         self.game_world.car.ghost_power_active = False
-        self.ghost_effect.set_ghost_mode(False)
+        if self.game_world.car.ghost_effect:
+            self.game_world.car.ghost_effect.set_ghost_mode(False)
 
     def _check_game_conditions(self):
         self._check_collisions()
@@ -193,9 +283,27 @@ class GameManager:
         )
 
         for enemy in self.game_world.enemies[:]:
-            if self.game_world.car.check_collision(enemy):
+            # USA O MÉTODO check_collision DO EFEITO FANTASMA
+            collision_occurred = False
+
+            # Verifica se o efeito fantasma existe e detecta colisão
+            if (
+                hasattr(self.game_world.car, "ghost_effect")
+                and self.game_world.car.ghost_effect is not None
+            ):
+                collision_occurred = self.game_world.car.ghost_effect.check_collision(
+                    enemy
+                )
+            else:
+                # Fallback: verificação de colisão normal se não houver efeito fantasma
+                collision_occurred = self.game_world.car.check_collision(enemy)
+
+            if collision_occurred:
                 if ghost_mode_active:
-                    continue
+                    print("Colisão ignorada - modo fantasma ativo")  # DEBUG
+                    continue  # Ignora colisão se estiver no modo fantasma
+
+                print("COLISÃO DETECTADA - GAME OVER")  # DEBUG
 
                 # Verificação de segurança
                 if not hasattr(self.game_world, "frozen"):
@@ -212,6 +320,11 @@ class GameManager:
                 self.showing_explosion = True
                 self.game_over = True
                 self.game_over_time = current_time
+
+                # Toca som de explosão
+                if hasattr(self, "explosion_sound"):
+                    self.explosion_sound.play()
+
                 break  # Sai do loop após a primeira colisão
 
     def _check_fuel(self):
@@ -266,28 +379,166 @@ class GameManager:
         # Limpa a tela
         self.screen.surface.fill((0, 0, 0))
 
-        # Desenha o mundo do jogo
-        self.game_world.draw(self.screen.surface)
+        # Desenha de acordo com o estado atual
+        if self.current_state == "start_screen":
+            # ADICIONADO: Desenha a tela inicial
+            self._draw_start_screen()
 
-        # Desenha os GIFs laterais
-        for gif in self.side_gifs_list:
-            gif.draw(self.screen.surface)
+        elif self.current_state == "game":
+            # Desenha o mundo do jogo
+            self.game_world.draw(self.screen.surface)
 
-        # Atualiza e desenha o HUD
-        self.hud.update()
-        self.hud.draw()
+            # Desenha os GIFs laterais
+            for gif in self.side_gifs_list:
+                gif.draw(self.screen.surface)
 
-        # Overlay final (se game over)
-        if self.game_over:
-            overlay = pygame.Surface((self.width, self.height))
-            overlay.set_alpha(180)
-            overlay.fill((50, 50, 50))
-            self.screen.surface.blit(overlay, (0, 0))
+            # Atualiza e desenha o HUD
+            self.hud.update()
+            self.hud.draw()
 
-            font = pygame.font.Font(None, 50)
-            final_text = font.render(
-                f"Pontuação Final: {self.score}", True, (255, 255, 255)
+            # Overlay final (se game over)
+            if self.game_over:
+                overlay = pygame.Surface((self.width, self.height))
+                overlay.set_alpha(180)
+                overlay.fill((50, 50, 50))
+                self.screen.surface.blit(overlay, (0, 0))
+
+                font = pygame.font.Font(None, 50)
+                final_text = font.render(
+                    f"Pontuação Final: {self.score}", True, (255, 255, 255)
+                )
+                text_x = self.width // 2 - final_text.get_width() // 2
+                text_y = self.height // 2 - final_text.get_height() // 2
+                self.screen.surface.blit(final_text, (text_x, text_y))
+
+        elif self.current_state == "highscore_input":
+            # ADICIONADO: Desenha a tela de inserção de nome
+            self.highscore_screen.draw(self.screen.surface, self.score)
+
+        elif self.current_state == "leaderboard":
+            # ADICIONADO: Desenha a tela de leaderboard
+            self.leaderboard_screen.draw(self.screen.surface)
+
+        elif self.current_state == "game_over":
+            # ADICIONADO: Tela de game over com opções
+            self._draw_game_over_screen()
+
+    def _draw_game_over_screen(self):
+        """Desenha a tela de game over com opções"""
+        # Fundo escuro semi-transparente
+        overlay = pygame.Surface((self.width, self.height))
+        overlay.set_alpha(200)
+        overlay.fill((0, 0, 0))
+        self.screen.surface.blit(overlay, (0, 0))
+
+        # Título
+        font_large = pygame.font.Font(None, 64)
+        title = font_large.render("FIM DE JOGO", True, (255, 255, 255))
+        self.screen.surface.blit(title, (self.width // 2 - title.get_width() // 2, 100))
+
+        # Pontuação
+        font_medium = pygame.font.Font(None, 48)
+        score_text = font_medium.render(
+            f"Pontuação: {self.score}", True, (255, 255, 255)
+        )
+        self.screen.surface.blit(
+            score_text, (self.width // 2 - score_text.get_width() // 2, 180)
+        )
+
+        # Opções
+        font_small = pygame.font.Font(None, 36)
+        options = [
+            "Pressione R para reiniciar",
+            "Pressione L para ver o ranking",
+            "Pressione ESC ou ENTER para voltar ao menu",
+        ]
+
+        y_pos = 280
+        for option in options:
+            text = font_small.render(option, True, (200, 200, 200))
+            self.screen.surface.blit(
+                text, (self.width // 2 - text.get_width() // 2, y_pos)
             )
-            text_x = self.width // 2 - final_text.get_width() // 2
-            text_y = self.height // 2 - final_text.get_height() // 2
-            self.screen.surface.blit(final_text, (text_x, text_y))
+            y_pos += 40
+
+    def _restart_game(self):
+        """Reinicia o jogo"""
+        # Recria todas as instâncias necessárias
+        self.game_world = GameWorld(self.width, self.height, self.img_config)
+        self.game_world.game_manager = self
+        self.game_world.car.game_manager = self
+        self.game_world.car.ghost_effect = GhostPickupEffect(self.game_world.car)
+
+        # Reseta variáveis de estado
+        self.score = 0
+        self.start_ticks = pygame.time.get_ticks()
+        self.game_over = False
+        self.game_over_time = None
+        self.player_controls_enabled = True
+        self.showing_explosion = False
+        self.explosion_end_time = 0
+
+        # Reseta a tela de highscore
+        self.highscore_screen.input_text = ""
+        self.highscore_screen.active = False
+
+        # Volta para o estado de jogo
+        self.current_state = "game"
+
+        # Recria o HUD
+        self.hud = HUD(
+            self.screen.surface,
+            self.game_world.car,
+            self.img_config,
+            lambda: self.score,
+        )
+
+        # Recria os GIFs laterais
+        self.side_gifs_list = []
+        self._init_side_gifs()
+
+    def _draw_start_screen(self):
+        """Desenha uma tela inicial simples"""
+        self.screen.surface.fill((0, 0, 50))  # Fundo azul escuro
+
+        font_large = pygame.font.Font(None, 64)
+        font_medium = pygame.font.Font(None, 36)
+        font_small = pygame.font.Font(None, 24)
+
+        # Título
+        title = font_large.render("CORRIDINHA", True, (255, 255, 0))
+        self.screen.surface.blit(title, (self.width // 2 - title.get_width() // 2, 100))
+
+        # Opções
+        options = [
+            "Pressione ENTER para começar",
+            "Pressione L para ver o ranking",
+            "Pressione ESC para sair",
+        ]
+
+        y_pos = 250
+        for option in options:
+            text = font_medium.render(option, True, (255, 255, 255))
+            self.screen.surface.blit(
+                text, (self.width // 2 - text.get_width() // 2, y_pos)
+            )
+            y_pos += 50
+
+        # Instruções
+        instructions = [
+            "Use SETAS para mover",
+            "Desvie dos carros inimigos",
+            "Pegue os power-ups no caminho!",
+        ]
+
+        y_pos = 400
+        for instruction in instructions:
+            text = font_small.render(instruction, True, (200, 200, 200))
+            self.screen.surface.blit(
+                text, (self.width // 2 - text.get_width() // 2, y_pos)
+            )
+            y_pos += 30
+
+    def check_highscore(self):
+        """Verifica se a pontuação atual é um highscore"""
+        return self.score_manager.is_highscore(self.score)
