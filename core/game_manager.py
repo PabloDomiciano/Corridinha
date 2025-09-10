@@ -68,40 +68,67 @@ class GameManager:
         self._init_side_gifs()
 
     def _init_side_gifs(self):
-        """Cria GIFs laterais com tamanho individual"""
+        """Cria GIFs laterais com spawn controlado por probabilidade"""
         if not self.img_config.side_gifs:
-            print("Nenhum GIF encontrado.")
             return
 
         sizes = {
-            "coqueiro": (40, 80),  # tamanho específico para 'coqueiro'
-            "default": (40, 40),  # tamanho padrão para outros GIFs
+            "coqueiro": (40, 80),
+            "casa": (120, 120),
+            "pedra": (30, 30),
+            "default": (40, 40),
+        }
+
+        base_offsets = {
+            "default": 6,
+        }
+
+        spawn_chances = {
+            "coqueiro": 0.9,
+            "pedra": 0.4,
+            "casa": 0.3,
         }
 
         for folder_name, frames in self.img_config.side_gifs.items():
             if not frames:
                 continue
+
+            chance = spawn_chances.get(folder_name, 1.0)
+            if random.random() > chance:
+                continue
+
             size = sizes.get(folder_name, sizes["default"])
 
-            # Lado esquerdo
-            x_left = 6
-            y_left = random.randint(-200, self.height - 50)
+            # Posição Y aleatória
+            y = random.randint(-200, self.height - 50)
 
-            # Lado direito
-            x_right = self.width - size[0] - 6
-            y_right = random.randint(-200, self.height - 50)
-            # evita que fiquem muito próximos verticalmente
-            while abs(y_right - y_left) < 80:
+            if folder_name == "casa":
+                # CASA apenas no lado direito
+                x_right = self.width - size[0]  # colada na direita
+                self.side_gifs_list.append(
+                    SideGif(frames, x_right, y, speed=5, frame_duration=300, size=size)
+                )
+            else:
+                # Outros objetos podem spawnar dos dois lados
+                offset = base_offsets.get(folder_name, base_offsets["default"])
+
+                x_left = offset
+                x_right = self.width - size[0] - offset
+
+                y_left = y
                 y_right = random.randint(-200, self.height - 50)
 
-            self.side_gifs_list.append(
-                SideGif(frames, x_left, y_left, speed=5, frame_duration=300, size=size)
-            )
-            self.side_gifs_list.append(
-                SideGif(
-                    frames, x_right, y_right, speed=5, frame_duration=300, size=size
+                # Evita spawn no mesmo Y dos dois lados
+                while abs(y_right - y_left) < 80:
+                    y_right = random.randint(-200, self.height - 50)
+
+                self.side_gifs_list.append(
+                    SideGif(frames, x_left, y_left, speed=5, frame_duration=300, size=size)
                 )
-            )
+                self.side_gifs_list.append(
+                    SideGif(frames, x_right, y_right, speed=5, frame_duration=300, size=size)
+                )
+
 
     def run(self):
         while self.running:
@@ -350,7 +377,6 @@ class GameManager:
                 "assets/sounds/effects/rocket_launch.mp3"
             )
 
-            # Sons específicos para cada pickup
             self.fuel_pickup_sound = pygame.mixer.Sound(
                 "assets/sounds/effects/fuel_pickup.wav"
             )
@@ -361,15 +387,19 @@ class GameManager:
                 "assets/sounds/effects/pickup.wav"
             )
 
-            self.fuel_pickup_sound.set_volume(0.25)  # Baixinho, não é o foco
-            self.ghost_pickup_sound.set_volume(0.35)  # Um pouco mais perceptível
-            self.rocket_pickup_sound.set_volume(0.6)  # Destaque, mas não exagerado
-            self.rocket_sound.set_volume(0.65)  # Barulho do disparo, bem presente
-            self.explosion_sound.set_volume(0.85)  # Alto para impacto realista
+            self.fuel_pickup_sound.set_volume(0.25)
+            self.ghost_pickup_sound.set_volume(0.35)
+            self.rocket_pickup_sound.set_volume(0.6)
+            self.rocket_sound.set_volume(0.65)
+            self.explosion_sound.set_volume(0.85)
+
+            # 🎵 Música de fundo
+            pygame.mixer.music.load("assets/sounds/music.mp3")
+            pygame.mixer.music.set_volume(0.5)  # volume da música (0.0 até 1.0)
+            pygame.mixer.music.play(-1)  # -1 = loop infinito
 
         except Exception as e:
             print(f"Erro ao carregar sons: {e}")
-            # Cria sons dummy para evitar erros
             dummy_sound = pygame.mixer.Sound(buffer=bytearray(100))
             self.explosion_sound = dummy_sound
             self.rocket_sound = dummy_sound
