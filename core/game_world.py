@@ -210,9 +210,12 @@ class GameWorld:
             if ghost.check_collision(self.car):
                 if hasattr(self, "game_manager"):
                     self.game_manager.ghost_pickup_sound.play()
+                current_time = pygame.time.get_ticks()
+                self.car.activate_ghost_power(current_time)   # <-- ATIVA o poder
                 self.ghost_pickups.remove(ghost)
             elif ghost.off_screen(self.height):
                 self.ghost_pickups.remove(ghost)
+
 
         # Spawn da bazuca
         if (

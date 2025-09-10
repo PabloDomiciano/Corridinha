@@ -46,6 +46,7 @@ class GameManager:
         self.leaderboard_screen = LeaderboardScreen(self.score_manager)
         self.current_state = "start_screen"
 
+
         # Carrega os sons
         self._load_sounds()
 
@@ -162,9 +163,6 @@ class GameManager:
                 # Calcula pontuação baseada em tempo (segundos * 10) ou distância
                 elapsed_seconds = (current_time - self.start_ticks) // 1000
                 self.score = elapsed_seconds * 10  # 10 pontos por segundo
-                
-                
-                self._check_rocket_explosion()
 
             # Atualiza o mundo do jogo com as teclas pressionadas
             keys = pygame.key.get_pressed() if self.player_controls_enabled else {}
@@ -212,11 +210,21 @@ class GameManager:
         elif self.current_state in ["start_screen", "leaderboard", "game_over"]:
             # Esses estados não precisam de atualizações de jogo
             pass
-        
+
+
+    def _check_rocket_explosion(self):
+        """Verifica se a rocket explodiu inimigos e adiciona pontos"""
+        if hasattr(self.game_world, "rocket_explosion_active") and self.game_world.rocket_explosion_active:
+            for enemy in self.game_world.enemies[:]:
+                if self.game_world.rocket_explosion_rect.colliderect(enemy.rect):
+                    self.score += 50  # ADICIONA 50 PONTOS POR INIMIGO EXPLODIDO
+                    self.game_world.enemies.remove(enemy)
+                    # Pode tocar som de inimigo explodindo, se quiser
+                    if hasattr(self, "explosion_sound"):
+                        self.explosion_sound.play()
 
     def _handle_ghost_power(self, current_time):
         self._check_ghost_pickup_collision(current_time)
-        self._update_ghost_effect(current_time)
 
     def _check_ghost_pickup_collision(self, current_time):
         for pickup in self.game_world.ghost_pickups[:]:
@@ -229,15 +237,7 @@ class GameManager:
                 break
 
     def _activate_ghost_power(self, current_time):
-        """Ativa o poder fantasma no jogador"""
-        print("Ghost power ATIVADO!")  # DEBUG
-        self.game_world.car.ghost_power_active = True
-        self.game_world.car.ghost_power_end_time = current_time + 8000  # 8 segundos
-
-        if self.game_world.car.ghost_effect:
-            self.game_world.car.ghost_effect.set_ghost_mode(True)
-        else:
-            print("ERRO: ghost_effect não encontrado!")
+        self.game_world.car.activate_ghost_power(current_time, duration=8000)
 
     def _update_ghost_effect(self, current_time):
         """Atualiza o efeito fantasma"""

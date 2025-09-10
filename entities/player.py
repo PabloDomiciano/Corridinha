@@ -400,21 +400,13 @@ class Player(Carro):
 
         remaining_time = self.ghost_power_end_time - current_time
 
-        # Desativa quando o tempo acabar
         if remaining_time <= 0:
             self.ghost_power_active = False
             if self.ghost_effect:
                 self.ghost_effect.set_ghost_mode(False)
             return
 
-        # Ativa piscar nos últimos 3 segundos
-        if remaining_time < self.blink_start_offset:
-            if self.ghost_effect:
-                self.ghost_effect.is_blinking = True
-        else:
-            if self.ghost_effect:
-                self.ghost_effect.is_blinking = False
-
-        # Atualiza o efeito visual (SEMPRE atualize, não só quando piscando)
+        # Nos últimos 3 segundos, ativa piscar
         if self.ghost_effect:
+            self.ghost_effect.is_blinking = remaining_time < self.blink_start_offset
             self.ghost_effect.update(current_time)

@@ -65,13 +65,16 @@ class GhostPickupEffect:
 
     def update(self, current_time):
         """
-        Atualiza os efeitos visuais.
-        Deve ser chamado a cada frame.
+        Atualiza os efeitos visuais (piscar ou fantasma).
+        Sempre deve ser chamado a cada frame.
         """
+        if not self.is_ghost:
+            self.entity.image = self.normal_image
+            return
+
         if self.is_blinking:
             self._update_blink(current_time)
-        elif self.is_ghost:
-            # Mantém a imagem fantasma mesmo quando não está piscando
+        else:
             self.entity.image = self.ghost_image
 
     def _update_blink(self, current_time):
