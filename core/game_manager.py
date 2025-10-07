@@ -1,5 +1,6 @@
 import pygame
 import random
+import math
 from core.game_world import GameWorld
 from entities.pickups.effects.ghost_effect import GhostPickupEffect
 from entities.player import Player
@@ -45,6 +46,10 @@ class GameManager:
         self.highscore_screen = HighscoreScreen(self.score_manager)
         self.leaderboard_screen = LeaderboardScreen(self.score_manager)
         self.current_state = "start_screen"
+
+        # Menu inicial: opções e seleção (navegável por setas)
+        self.menu_options = ["Iniciar Jogo", "Ranking", "Sair"]
+        self.menu_selection = 0
 
 
         # Carrega os sons
@@ -148,13 +153,67 @@ class GameManager:
             # Tela inicial
             if self.current_state == "start_screen":
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:
-                        self.current_state = "game"
-                        self._restart_game()  # Reinicia o jogo ao começar
+                    # Navegação do menu por setas
+                    if event.key == pygame.K_UP:
+                        self.menu_selection = (self.menu_selection - 1) % len(self.menu_options)
+                    elif event.key == pygame.K_DOWN:
+                        self.menu_selection = (self.menu_selection + 1) % len(self.menu_options)
+                    elif event.key == pygame.K_RETURN:
+                        # Executa a opção selecionada
+                        choice = self.menu_options[self.menu_selection]
+                        if choice == "Iniciar Jogo":
+                            self.current_state = "game"
+                            self._restart_game()
+                        elif choice == "Ranking":
+                            self.current_state = "leaderboard"
+                            # Reset leaderboard animation
+                            self.leaderboard_screen.alpha = 0
+                            self.leaderboard_screen.last_time = pygame.time.get_ticks()
+                            self.leaderboard_screen.start_time = pygame.time.get_ticks()
+                        elif choice == "Sair":
+                            self.running = False
                     elif event.key == pygame.K_l:
                         self.current_state = "leaderboard"
+                        self.leaderboard_screen.alpha = 0
+                        self.leaderboard_screen.last_time = pygame.time.get_ticks()
+                        self.leaderboard_screen.start_time = pygame.time.get_ticks()
                     elif event.key == pygame.K_ESCAPE:
                         self.running = False
+                # Suporte a mouse: hover e clique
+                elif event.type == pygame.MOUSEMOTION:
+                    mx, my = event.pos
+                    # Calcula região das opções (centralizadas, Y começando em 250)
+                    option_y = 250
+                    for idx, _ in enumerate(self.menu_options):
+                        rect = pygame.Rect(
+                            self.width // 2 - 120, option_y - 8, 240, 44
+                        )
+                        if rect.collidepoint(mx, my):
+                            self.menu_selection = idx
+                            break
+                        option_y += 50
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:  # clique esquerdo
+                        mx, my = event.pos
+                        option_y = 250
+                        for idx, option in enumerate(self.menu_options):
+                            rect = pygame.Rect(
+                                self.width // 2 - 120, option_y - 8, 240, 44
+                            )
+                            if rect.collidepoint(mx, my):
+                                choice = option
+                                if choice == "Iniciar Jogo":
+                                    self.current_state = "game"
+                                    self._restart_game()
+                                elif choice == "Ranking":
+                                    self.current_state = "leaderboard"
+                                    self.leaderboard_screen.alpha = 0
+                                    self.leaderboard_screen.last_time = pygame.time.get_ticks()
+                                    self.leaderboard_screen.start_time = pygame.time.get_ticks()
+                                elif choice == "Sair":
+                                    self.running = False
+                                break
+                            option_y += 50
 
             # Tela de input de highscore
             elif self.current_state == "highscore_input":
@@ -232,6 +291,10 @@ class GameManager:
         # ADICIONADO: Atualiza a tela de highscore se necessário
         elif self.current_state == "highscore_input":
             self.highscore_screen.update()
+
+        # ADICIONADO: Atualiza a tela de leaderboard (fade-in)
+        elif self.current_state == "leaderboard":
+            self.leaderboard_screen.update()
 
         # ADICIONADO: Para estados de menu, não faz nada especial
         elif self.current_state in ["start_screen", "leaderboard", "game_over"]:
@@ -426,21 +489,6 @@ class GameManager:
             self.hud.update()
             self.hud.draw()
 
-            # Overlay final (se game over)
-            if self.game_over:
-                overlay = pygame.Surface((self.width, self.height))
-                overlay.set_alpha(180)
-                overlay.fill((50, 50, 50))
-                self.screen.surface.blit(overlay, (0, 0))
-
-                font = pygame.font.Font(None, 50)
-                final_text = font.render(
-                    f"Pontuação Final: {self.score}", True, (255, 255, 255)
-                )
-                text_x = self.width // 2 - final_text.get_width() // 2
-                text_y = self.height // 2 - final_text.get_height() // 2
-                self.screen.surface.blit(final_text, (text_x, text_y))
-
         elif self.current_state == "highscore_input":
             # ADICIONADO: Desenha a tela de inserção de nome
             self.highscore_screen.draw(self.screen.surface, self.score)
@@ -529,45 +577,95 @@ class GameManager:
 
     def _draw_start_screen(self):
         """Desenha uma tela inicial simples"""
-        self.screen.surface.fill((0, 0, 50))  # Fundo azul escuro
+        # Fundo com gradiente vertical (doescuro para mais claro)
+        top_color = pygame.Color(6, 16, 42)
+        bottom_color = pygame.Color(10, 60, 120)
+        for i in range(self.height):
+            ratio = i / self.height
+            r = int(top_color.r * (1 - ratio) + bottom_color.r * ratio)
+            g = int(top_color.g * (1 - ratio) + bottom_color.g * ratio)
+            b = int(top_color.b * (1 - ratio) + bottom_color.b * ratio)
+            pygame.draw.line(self.screen.surface, (r, g, b), (0, i), (self.width, i))
 
-        font_large = pygame.font.Font(None, 64)
-        font_medium = pygame.font.Font(None, 36)
-        font_small = pygame.font.Font(None, 24)
+        # Fontes
+        font_large = pygame.font.Font(None, 72)
+        font_medium = pygame.font.Font(None, 40)
+        font_small = pygame.font.Font(None, 22)
 
-        # Título
-        title = font_large.render("CORRIDINHA", True, (255, 255, 0))
-        self.screen.surface.blit(title, (self.width // 2 - title.get_width() // 2, 100))
+        # Título com sombra
+        title = font_large.render("CORRIDINHA", True, (255, 230, 120))
+        title_shadow = font_large.render("CORRIDINHA", True, (20, 20, 40))
+        tx = self.width // 2 - title.get_width() // 2
+        self.screen.surface.blit(title_shadow, (tx + 4, 104))
+        self.screen.surface.blit(title, (tx, 100))
 
-        # Opções
-        options = [
-            "Pressione ENTER para começar",
-            "Pressione L para ver o ranking",
-            "Pressione ESC para sair",
-        ]
+        # Pequena descrição abaixo
+        subtitle = font_small.render("Desvie, colete power-ups e sobreviva o maior tempo!", True, (220, 220, 220))
+        self.screen.surface.blit(subtitle, (self.width // 2 - subtitle.get_width() // 2, 170))
 
+        # Animação de pulso para item selecionado
+        t = pygame.time.get_ticks() / 1000.0
+        pulse = 1.0 + 0.05 * (1 + math.sin(t * 3))
+
+        # Desenha um sprite de carro (pixel art se disponível) com um leve bob
+        try:
+            car_sprite = self.img_config.car_img
+        except Exception:
+            car_sprite = None
+
+        if car_sprite:
+            # Escala para uma dimensão agradável no menu
+            car_w = 120
+            car_h = int(car_sprite.get_height() * (car_w / car_sprite.get_width()))
+            car_img_scaled = pygame.transform.scale(car_sprite, (car_w, car_h))
+
+            # Bob (subida/descida) para animação
+            bob = int(8 * math.sin(t * 2.0))
+
+            car_x = self.width // 2 - car_w // 2
+            car_y = 200 + bob
+
+            # Sombra simples
+            shadow = pygame.Surface((car_w, 8), pygame.SRCALPHA)
+            pygame.draw.ellipse(shadow, (0, 0, 0, 100), shadow.get_rect())
+            self.screen.surface.blit(shadow, (car_x, car_y + car_h - 6))
+
+            # Desenha o carro
+            self.screen.surface.blit(car_img_scaled, (car_x, car_y))
+
+        # Opções navegáveis com destaque
         y_pos = 250
-        for option in options:
-            text = font_medium.render(option, True, (255, 255, 255))
-            self.screen.surface.blit(
-                text, (self.width // 2 - text.get_width() // 2, y_pos)
-            )
-            y_pos += 50
+        for idx, option in enumerate(self.menu_options):
+            is_selected = idx == self.menu_selection
+            color = (255, 240, 140) if is_selected else (240, 240, 240)
+            text = font_medium.render(option, True, color)
+
+            # Calcula posição, aplica transformação se selecionado
+            x = self.width // 2 - text.get_width() // 2
+            y = y_pos
+            if is_selected:
+                # Pula levemente e aumenta
+                scaled = int(text.get_height() * pulse)
+                # Centro preservado: desenha um highlight
+                highlight = pygame.Surface((text.get_width() + 30, text.get_height() + 14), pygame.SRCALPHA)
+                highlight.fill((30, 30, 60, 120))
+                self.screen.surface.blit(highlight, (x - 15, y - 7))
+
+            self.screen.surface.blit(text, (x, y))
+            y_pos += 60
 
         # Instruções
         instructions = [
-            "Use SETAS para mover",
-            "Desvie dos carros inimigos",
-            "Pegue os power-ups no caminho!",
+            "Use SETAS ou o MOUSE para navegar",
+            "ENTER ou clique para confirmar",
+            "Boa sorte!",
         ]
 
-        y_pos = 400
+        y_pos = self.height - 90
         for instruction in instructions:
             text = font_small.render(instruction, True, (200, 200, 200))
-            self.screen.surface.blit(
-                text, (self.width // 2 - text.get_width() // 2, y_pos)
-            )
-            y_pos += 30
+            self.screen.surface.blit(text, (self.width // 2 - text.get_width() // 2, y_pos))
+            y_pos += 22
 
     def check_highscore(self):
         """Verifica se a pontuação atual é um highscore"""
