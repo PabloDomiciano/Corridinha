@@ -2,68 +2,98 @@ import pygame
 import random
 import math
 from entities.carro import Carro
-from entities.hitbox import Hitbox  # Não se esqueça de importar a classe Hitbox
+from entities.hitbox import Hitbox
 
 
 class EnemyCar(Carro):
+    """
+    Representa um carro inimigo com movimentos realistas.
+    
+    Responsabilidades:
+    - Mover-se verticalmente para baixo (scrolling)
+    - Oscilar lateralmente (movimento realista)
+    - Trocar de faixa ocasionalmente
+    - Evitar colisões com outros carros inimigos
+    - Manter distância segura do jogador
+    """
+    
     def __init__(self, image, x_pos, screen_height, speed=3):
-        # Adiciona variação na velocidade base (±30%)
-        speed_variation = random.uniform(0.7, 1.3)  # Entre 70% e 130% da velocidade base
+        # Adiciona variação de velocidade (70% a 130% da velocidade base)
+        # Isso faz cada carro ter velocidade única, criando tráfego realista
+        speed_variation = random.uniform(0.7, 1.3)
         varied_speed = speed * speed_variation
         
+        # Inicializa carro acima da tela (y negativo)
         super().__init__(image, x_pos, y_pos=-image.get_height(), speed=varied_speed)
+        
         self.screen_height = screen_height
-        self.frozen = False 
+        self.frozen = False  # Estado de congelamento (game over)
         
-        # Configurações de movimento lateral
-        self.base_x = x_pos  # Posição base na pista
-        self.lateral_offset = 0  # Deslocamento lateral atual
-        self.max_lateral_movement = 25  # Máximo de movimento para os lados (em pixels)
+        # === MOVIMENTO LATERAL (OSCILAÇÃO) ===
+        self.base_x = x_pos  # Posição central da faixa
+        self.lateral_offset = 0  # Quanto deslocou para os lados
+        self.max_lateral_movement = 25  # Limite máximo de desvio lateral
         
-        # Parâmetros de oscilação - VARIADOS por carro
-        self.oscillation_speed = random.uniform(0.015, 0.05)  # Maior variação na velocidade
-        self.oscillation_amplitude = random.uniform(10, 30)  # Maior variação na amplitude
-        self.time_offset = random.uniform(0, math.pi * 2)  # Offset aleatório para variar o padrão
-        self.time = 0  # Contador de tempo interno
+        # Parâmetros de oscilação (únicos para cada carro)
+        self.oscillation_speed = random.uniform(0.015, 0.05)  # Velocidade da oscilação
+        self.oscillation_amplitude = random.uniform(10, 30)  # Amplitude da oscilação
+        self.time_offset = random.uniform(0, math.pi * 2)  # Fase inicial (para variar)
+        self.time = 0  # Contador interno de tempo
         
-        # Tipo de movimento (para variação) - com mais opções
-        self.movement_pattern = random.choice(['sine', 'slow_drift', 'subtle', 'aggressive', 'calm'])
+        # Padrão de movimento (cada carro tem um estilo diferente)
+        self.movement_pattern = random.choice([
+            'sine',        # Movimento senoidal suave
+            'slow_drift',  # Deriva lenta
+            'subtle',      # Movimento quase imperceptível
+            'aggressive',  # Zig-zag rápido
+            'calm'         # Muito suave e previsível
+        ])
         
-        # Ajusta parâmetros baseado no padrão escolhido
+        # Ajusta parâmetros baseado no padrão
         if self.movement_pattern == 'aggressive':
-            self.oscillation_speed *= 1.5  # 50% mais rápido
-            self.oscillation_amplitude *= 1.2  # 20% mais amplitude
+            self.oscillation_speed *= 1.5  # Mais rápido
+            self.oscillation_amplitude *= 1.2  # Mais amplitude
         elif self.movement_pattern == 'calm':
-            self.oscillation_speed *= 0.6  # 40% mais lento
-            self.oscillation_amplitude *= 0.7  # 30% menos amplitude
+            self.oscillation_speed *= 0.6  # Mais lento
+            self.oscillation_amplitude *= 0.7  # Menos amplitude
         
-        # Sistema de troca de faixa
-        self.available_lanes = [100, 220]  # Faixas disponíveis
-        self.is_changing_lane = False  # Se está trocando de faixa
-        self.target_lane = None  # Faixa de destino
-        # Velocidade de troca varia com a velocidade do carro
-        self.lane_change_speed = varied_speed * 0.8  # Proporcional à velocidade
-        self.lane_change_cooldown = 0  # Cooldown para próxima troca
-        self.min_y_for_lane_change = 100  # Y mínimo para começar a trocar de faixa
-        self.safe_distance_from_player = 150  # Distância mínima segura do player
+        # === SISTEMA DE TROCA DE FAIXA ===
+        self.available_lanes = [100, 220]  # Posições X das faixas
+        self.is_changing_lane = False  # Se está trocando agora
+        self.target_lane = None  # Faixa de destino (None = não está trocando)
+        self.lane_change_speed = varied_speed * 0.8  # Velocidade da troca
+        self.safe_distance_from_player = 150  # Distância mínima do jogador
+        self.min_y_for_lane_change = 100  # Precisa estar abaixo dessa posição
         
-        # Chance de trocar de faixa (20% dos carros trocam de faixa - reduzido)
+        # Apenas 20% dos carros podem trocar de faixa
         self.can_change_lane = random.random() < 0.2
         if self.can_change_lane:
-            # Define quando vai tentar trocar de faixa (entre 150 e 350 pixels)
+            # Define quando tentará trocar (aleatório entre 150-350 pixels)
             self.lane_change_trigger_y = random.randint(150, 350)
-
-        # Inicializa a hitbox para o inimigo com a mesma posição e dimensões do carro
+        
+        # Inicializa hitbox para detecção de colisão
         self.hitbox = Hitbox()
-        self.hitbox.set_rect(
-            self.rect.width, self.rect.height, self.rect.x, self.rect.y)
-
-    def update(self, player_rect=None, other_enemies=None):
+        self.hitbox.set_rect(self.rect.width, self.rect.height, self.rect.x, self.rect.y)
+    
+    # === MÉTODO PRINCIPAL DE ATUALIZAÇÃO ===
+    
+    def update(self, player_rect=None, other_enemies=None, dt=1/60):
+        """
+        Atualiza o estado do carro inimigo.
+        
+        Args:
+            player_rect: Rect do jogador (para evitar colisões)
+            other_enemies: Lista de outros carros inimigos (para evitar colisões)
+            dt: Delta time (tempo desde o último frame)
+        """
         if not self.frozen:
-            # Calcula a nova posição vertical
-            new_y = self.rect.y + self.speed
+            # Converte velocidade para delta time (mantém 60 FPS como base)
+            speed_dt = self.speed * 60 * dt
             
-            # Verifica colisão com outros carros inimigos antes de mover
+            # Calcula nova posição vertical
+            new_y = self.rect.y + speed_dt
+            
+            # Verifica colisão com outros carros antes de mover
             can_move = True
             if other_enemies:
                 can_move = self._check_collision_with_enemies(new_y, other_enemies)
@@ -81,10 +111,10 @@ class EnemyCar(Carro):
             
             # Se está trocando de faixa, executa a troca
             if self.is_changing_lane:
-                self._perform_lane_change()
+                self._perform_lane_change(dt)
             else:
                 # Atualiza o movimento lateral baseado no padrão escolhido
-                self._update_lateral_movement()
+                self._update_lateral_movement(dt)
             
             # Atualiza a posição x com o offset lateral
             self.rect.x = self.base_x + self.lateral_offset
@@ -120,9 +150,10 @@ class EnemyCar(Carro):
         
         return True  # Pode mover
     
-    def _update_lateral_movement(self):
+    def _update_lateral_movement(self, dt):
         """Atualiza o movimento lateral do carro baseado no padrão escolhido"""
-        self.time += self.oscillation_speed
+        # Multiplicamos a velocidade de oscilação por 60 para manter a mesma taxa em 60 FPS
+        self.time += self.oscillation_speed * 60 * dt
         
         if self.movement_pattern == 'sine':
             # Movimento senoidal suave e constante
@@ -180,7 +211,7 @@ class EnemyCar(Carro):
                 # Desabilita para não trocar novamente
                 self.can_change_lane = False
     
-    def _perform_lane_change(self):
+    def _perform_lane_change(self, dt):
         """Executa a troca de faixa de forma suave"""
         if self.target_lane is None:
             self.is_changing_lane = False
@@ -189,11 +220,14 @@ class EnemyCar(Carro):
         # Calcula a diferença entre a posição atual e o alvo
         diff = self.target_lane - self.base_x
         
+        # Velocidade de troca de faixa multiplicada por 60 para manter a mesma velocidade em 60 FPS
+        speed_dt = self.lane_change_speed * 60 * dt
+        
         # Move gradualmente em direção à faixa alvo
-        if abs(diff) > self.lane_change_speed:
+        if abs(diff) > speed_dt:
             # Ainda não chegou, continua movendo
             direction = 1 if diff > 0 else -1
-            self.base_x += direction * self.lane_change_speed
+            self.base_x += direction * speed_dt
         else:
             # Chegou na faixa alvo
             self.base_x = self.target_lane

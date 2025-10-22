@@ -19,10 +19,12 @@ class Particle:
         self.lifetime = random.randint(300, 800)
         self.alpha = 255
 
-    def update(self):
-        self.x += self.speed_x
-        self.y += self.speed_y
-        self.lifetime -= 16
+    def update(self, dt=1/60):
+        # Velocidade multiplicada por 60 para manter mesma velocidade em 60 FPS
+        self.x += self.speed_x * 60 * dt
+        self.y += self.speed_y * 60 * dt
+        # Decremento de lifetime ajustado por dt (normalizado para 60 FPS)
+        self.lifetime -= 16 * 60 * dt
         self.alpha = max(0, int((self.lifetime / 800) * 255))
         return self.lifetime > 0
 

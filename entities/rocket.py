@@ -23,9 +23,10 @@ class Rocket(BaseEntity):
         self.min_trail_size = 1  # Tamanho mínimo no final
         self.particle_lifetime = 25  # Duração em frames
 
-    def update(self):
+    def update(self, dt=1/60):
         if not self.frozen:
-            self.rect.y -= self.speed
+            # Velocidade multiplicada por 60 para manter a mesma velocidade em 60 FPS
+            self.rect.y -= self.speed * 60 * dt
             current_time = pygame.time.get_ticks()
 
             # Adiciona nova partícula ao rastro periodicamente
@@ -35,7 +36,8 @@ class Rocket(BaseEntity):
 
             # Atualiza partículas existentes
             for particle in self.trail_particles[:]:
-                particle["lifetime"] -= 1
+                # Decremento de lifetime ajustado por dt
+                particle["lifetime"] -= 60 * dt  # Normalizado para 60 FPS
 
                 if particle["lifetime"] <= 0:
                     self.trail_particles.remove(particle)
@@ -44,10 +46,10 @@ class Rocket(BaseEntity):
                     life_progress = 1 - (particle["lifetime"] / self.particle_lifetime)
 
                     # Movimento para baixo com desaceleração
-                    particle["y"] += 1 + (2 * life_progress)
+                    particle["y"] += (1 + (2 * life_progress)) * 60 * dt
 
                     # Movimento horizontal aleatório suave
-                    particle["x"] += particle["drift"] * (0.5 + life_progress)
+                    particle["x"] += particle["drift"] * (0.5 + life_progress) * 60 * dt
 
                     # Diminuição do tamanho
                     particle["size"] = self.max_trail_size - (

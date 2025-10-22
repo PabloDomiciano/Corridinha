@@ -12,12 +12,14 @@ class Track:
         self.screen_height = screen_height
         self.frozen = False
 
-    def update(self):
+    def update(self, dt):
         if not hasattr(self, 'frozen'):
             self.frozen = False
         if not self.frozen:
-            self.y1 += self.speed
-            self.y2 += self.speed
+            # Velocidade base multiplicada por 60 para manter a mesma velocidade em 60 FPS
+            speed_dt = self.speed * 60 * dt
+            self.y1 += speed_dt
+            self.y2 += speed_dt
 
             # Reseta as posições para loop da imagem
             if self.y1 >= self.screen_height:

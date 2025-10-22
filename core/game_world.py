@@ -6,77 +6,104 @@ from entities.track import Track
 from entities.pickups.fuel import FuelPickup
 from entities.enemy_car import EnemyCar
 from entities.pickups.ghost import GhostPickup
-from entities.explosion import Explosion  # <- Adicionado
-from entities.floating_text import FloatingText  # <- Adicionado para pontos flutuantes
+from entities.explosion import Explosion
+from entities.floating_text import FloatingText
 
 
 class GameWorld:
+    """
+    Gerencia todos os elementos do mundo do jogo.
+    
+    Responsabilidades:
+    - Criar e atualizar pista, jogador, inimigos e pickups
+    - Controlar sistema de spawn (quando e onde criar inimigos/itens)
+    - Detectar colisões entre foguetes e inimigos
+    - Gerenciar explosões e efeitos visuais
+    - Calcular distância percorrida (pontuação)
+    - Congelar o jogo quando necessário (game over)
+    """
+    
     def __init__(self, width, height, img_config):
         self.width = width
         self.height = height
         self.img_config = img_config
-
-        # Configurações de pistas
-        self.enemy_lanes = [100, 220]
-        self.road_lanes = [100, 220]
-
-        # Controle de spawn
-        self.last_spawn_time = 0
-        self.spawn_delay = 1000
-        self.lane_cooldowns = {lane: 0 for lane in self.enemy_lanes + self.road_lanes}
-        self.last_pickup_spawn = 0
-        self.pickup_cooldown = 2000  # Reduzido de 3000 para 2000ms (mais frequente)
-        self.last_fuel_spawn = 0
-        self.fuel_spawn_cooldown = 4000  # Cooldown específico para fuel (4 segundos)
-
-        # Elementos do jogo
+        
+        # === CONFIGURAÇÕES DAS PISTAS ===
+        self.enemy_lanes = [100, 220]  # Posições X das faixas para inimigos
+        self.road_lanes = [100, 220]  # Posições X das faixas da estrada
+        
+        # === CONTROLE DE SPAWN ===
+        # Inimigos
+        self.last_spawn_time = 0  # Última vez que spawnou um inimigo
+        self.spawn_delay = 1000  # Delay mínimo entre spawns (ms)
+        self.lane_cooldowns = {lane: 0 for lane in self.enemy_lanes}  # Cooldown por faixa
+        
+        # Pickups
+        self.last_pickup_spawn = 0  # Último spawn de pickup genérico
+        self.pickup_cooldown = 2000  # Cooldown para pickups (ms)
+        self.last_fuel_spawn = 0  # Último spawn de combustível
+        self.fuel_spawn_cooldown = 4000  # Cooldown específico para fuel (ms)
+        
+        # === ELEMENTOS DO JOGO ===
         self.track = Track(self.img_config.track_img, self.height)
         self.car = Player(
             self.img_config.car_img, self.width, self.height, x_pos=200, y_pos=500
         )
-        self.enemies = []
-        self.fuel_pickups = []
-        self.ghost_pickups = []
-        self.pickups = []
-
-        # Explosão
-        self.frozen = False  # Estado global de congelamento
-        self.car.frozen = False  # Garante que o carro tem o atributo
-        self.track.frozen = False  # Garante que a pista tem o atributo
-        self.explosion = Explosion(img_config)  # <- Instância da explosão
+        self.enemies = []  # Lista de carros inimigos
+        self.fuel_pickups = []  # Lista de pickups de combustível
+        self.ghost_pickups = []  # Lista de pickups de fantasma
+        self.pickups = []  # Lista genérica de pickups
         
-        # Textos flutuantes (para pontos)
-        self.floating_texts = []
+        # === SISTEMA DE EXPLOSÃO ===
+        self.explosion = Explosion(img_config)
         
-        # Distância percorrida (para pontuação)
-        self.distance_traveled = 0
-
-        # Imagens de inimigos
+        # === SISTEMA DE PONTUAÇÃO ===
+        self.floating_texts = []  # Textos flutuantes (ex: "+20")
+        self.distance_traveled = 0  # Distância percorrida em pixels
+        
+        # === ESTADO DO JOGO ===
+        self.frozen = False  # Se o jogo está congelado
+        self.car.frozen = False
+        self.track.frozen = False
+        
+        # === IMAGENS DOS INIMIGOS ===
         self.enemy_imgs = [
             self.img_config.ambulancia_img,
             self.img_config.onibus_img,
             self.img_config.car_enemy,
         ]
-
-    def update(self, keys):
-        if self.frozen:
-            self.explosion.update()  
-            return
-
-        current_time = pygame.time.get_ticks() 
+    
+    # === MÉTODO PRINCIPAL DE ATUALIZAÇÃO ===
+    
+    def update(self, keys, dt):
+        """
+        Atualiza todos os elementos do mundo do jogo.
         
-        self._update_track_and_player(keys)
-        self._spawn_and_update_enemies()
-        self._spawn_and_update_pickups()
-        self.explosion.update()
+        Args:
+            keys: Dicionário com estado das teclas
+            dt: Delta time (tempo desde o último frame)
+        """
+        # Se está congelado, apenas atualiza a explosão
+        if self.frozen:
+            self.explosion.update(dt)
+            return
+        
+        current_time = pygame.time.get_ticks()
+        
+        # Atualiza elementos base
+        self._update_track_and_player(keys, dt)
+        self._spawn_and_update_enemies(dt)
+        self._spawn_and_update_pickups(dt)
+        self.explosion.update(dt)
         self.car.update_ghost_power(current_time)
         
-        # Atualiza distância percorrida (baseado na velocidade da pista)
-        self.distance_traveled += self.track.speed
-
-        # Atualiza e remove textos flutuantes expirados
+        # Atualiza distância percorrida (para pontuação)
+        # Multiplica por 60 para normalizar com base em 60 FPS
+        self.distance_traveled += self.track.speed * dt * 60
+        
+        # Atualiza textos flutuantes e remove os expirados
         for text in self.floating_texts[:]:
-            text.update()
+            text.update(dt)
             if text.is_expired():
                 self.floating_texts.remove(text)
 
@@ -171,12 +198,12 @@ class GameWorld:
         for pickup in self.pickups:
             pickup.frozen = False
 
-    def _update_track_and_player(self, keys):
-        self.track.update()
-        self.car.update(keys)
+    def _update_track_and_player(self, keys, dt):
+        self.track.update(dt)
+        self.car.update(keys, dt)
 
     # ===== SISTEMA DE SPAWN MELHORADO =====
-    def _spawn_and_update_enemies(self):
+    def _spawn_and_update_enemies(self, dt):
         current_time = pygame.time.get_ticks()
 
         # Verifica se é hora de spawnar e se há espaço suficiente
@@ -191,7 +218,7 @@ class GameWorld:
 
         # Atualiza inimigos existentes (passando a posição do player e outros inimigos)
         for enemy in self.enemies[:]:
-            enemy.update(self.car.rect, self.enemies)  # Passa a posição do player e lista de inimigos
+            enemy.update(self.car.rect, self.enemies, dt)  # Passa a posição do player e lista de inimigos
             if enemy.off_screen(self.height):
                 self.enemies.remove(enemy)
     
@@ -259,7 +286,7 @@ class GameWorld:
             self.enemies.append(EnemyCar(enemy_img, lane, self.height))
             self.lane_cooldowns[lane] = now  # Atualiza cooldown da pista
 
-    def _spawn_and_update_pickups(self):
+    def _spawn_and_update_pickups(self, dt):
         current_time = pygame.time.get_ticks()
 
         # Spawn de fuel - SISTEMA MELHORADO E CONTROLADO
@@ -293,7 +320,7 @@ class GameWorld:
 
         # Atualiza fuel pickups
         for fuel in self.fuel_pickups[:]:
-            fuel.update()
+            fuel.update(dt)
             if fuel.check_collision(self.car):
                 if hasattr(self, "game_manager"):
                     self.game_manager.fuel_pickup_sound.play()
@@ -304,7 +331,7 @@ class GameWorld:
 
         # Atualiza ghost pickups
         for ghost in self.ghost_pickups[:]:
-            ghost.update()
+            ghost.update(dt)
             if ghost.check_collision(self.car):
                 if hasattr(self, "game_manager"):
                     self.game_manager.ghost_pickup_sound.play()

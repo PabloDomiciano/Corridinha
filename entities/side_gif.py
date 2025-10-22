@@ -26,7 +26,7 @@ class SideGif:
         self.screen_height = pygame.display.get_surface().get_height()
         self.frozen = False  # Atributo para congelar o GIF
 
-    def update(self):
+    def update(self, dt=1/60):
         # Não atualiza se estiver congelado
         if self.frozen:
             return
@@ -36,8 +36,8 @@ class SideGif:
             self.current_frame = (self.current_frame + 1) % self.total_frames
             self.last_update = now
 
-        # Movimento vertical
-        self.y += self.speed
+        # Movimento vertical (velocidade multiplicada por 60 para manter mesma velocidade em 60 FPS)
+        self.y += self.speed * 60 * dt
         if self.y > self.screen_height:
             self.y = -50  # reinicia no topo
 

@@ -21,9 +21,10 @@ class BasePickup(BaseEntity):
                 self.rect.y
             )
 
-    def update(self):
+    def update(self, dt=1/60):
         if not self.frozen:
-            self.rect.y += self.speed
+            # Velocidade multiplicada por 60 para manter a mesma velocidade em 60 FPS
+            self.rect.y += self.speed * 60 * dt
         self.update_hitbox()
 
     def check_collision(self, player):

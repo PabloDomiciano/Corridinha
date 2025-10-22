@@ -20,7 +20,7 @@ class Explosion:
         self.last_update = pygame.time.get_ticks()
         self.position = (x, y)
 
-    def update(self):
+    def update(self, dt=1/60):
         if not self.active:
             return
             

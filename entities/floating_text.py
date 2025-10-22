@@ -28,13 +28,13 @@ class FloatingText:
         self.surface = self.font.render(text, True, color)
         self.rect = self.surface.get_rect(center=(x, y))
 
-    def update(self):
+    def update(self, dt=1/60):
         """Atualiza a posição e opacidade do texto"""
         current_time = pygame.time.get_ticks()
         elapsed = current_time - self.birth_time
         
-        # Move o texto para cima
-        self.y -= self.rise_speed
+        # Move o texto para cima (velocidade multiplicada por 60 para manter mesma velocidade em 60 FPS)
+        self.y -= self.rise_speed * 60 * dt
         self.rect.centery = int(self.y)
         
         # Calcula a opacidade (fade out)

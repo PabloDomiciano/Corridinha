@@ -140,10 +140,14 @@ class GameManager:
 
 
     def run(self):
+        last_time = pygame.time.get_ticks()
         while self.running:
             current_time = pygame.time.get_ticks()
+            dt = (current_time - last_time) / 1000.0  # Delta time em segundos
+            last_time = current_time
+            
             self._handle_events()
-            self._update(current_time)
+            self._update(current_time, dt)
             self._render()
             pygame.display.flip()
             self.clock.tick(self.fps)
@@ -254,7 +258,7 @@ class GameManager:
                         self.current_state = "start_screen"
 
 
-    def _update(self, current_time):
+    def _update(self, current_time, dt):
         # Atualiza apenas se estiver no estado de jogo
         if self.current_state == "game":
             if not self.game_over:
@@ -266,11 +270,11 @@ class GameManager:
 
             # Atualiza o mundo do jogo com as teclas pressionadas
             keys = pygame.key.get_pressed() if self.player_controls_enabled else {}
-            self.game_world.update(keys)
+            self.game_world.update(keys, dt)
 
             # Atualiza os GIFs laterais
             for gif in self.side_gifs_list:
-                gif.update()
+                gif.update(dt)
 
             # Gerencia o poder fantasma
             self._handle_ghost_power(current_time)
