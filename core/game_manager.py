@@ -14,6 +14,7 @@ from ui.screen import Screen
 from utils.score_manager import ScoreManager
 from ui.highscore_screen import HighscoreScreen
 from ui.leaderboard_screen import LeaderboardScreen
+from ui.credits_screen import CreditsScreen
 
 
 class GameManager:
@@ -37,6 +38,7 @@ class GameManager:
 
         # Pontuação
         self.score = 0
+        self.bonus_score = 0  # Pontos de bônus (explosões, etc)
         self.start_ticks = pygame.time.get_ticks()
         self.game_over = False
         self.game_over_time = None
@@ -45,11 +47,13 @@ class GameManager:
         self.score_manager = ScoreManager()
         self.highscore_screen = HighscoreScreen(self.score_manager)
         self.leaderboard_screen = LeaderboardScreen(self.score_manager)
+        self.credits_screen = CreditsScreen()
         self.current_state = "start_screen"
 
         # Menu inicial: opções e seleção (navegável por setas)
-        self.menu_options = ["Iniciar Jogo", "Ranking", "Sair"]
+        self.menu_options = ["Iniciar Jogo", "Ranking", "Créditos", "Sair"]
         self.menu_selection = 0
+        self.menu_rects = []  # Para armazenar as áreas clicáveis das opções
 
 
         # Carrega os sons
@@ -170,6 +174,12 @@ class GameManager:
                             self.leaderboard_screen.alpha = 0
                             self.leaderboard_screen.last_time = pygame.time.get_ticks()
                             self.leaderboard_screen.start_time = pygame.time.get_ticks()
+                        elif choice == "Créditos":
+                            self.current_state = "credits"
+                            # Reset credits animation
+                            self.credits_screen.alpha = 0
+                            self.credits_screen.last_time = pygame.time.get_ticks()
+                            self.credits_screen.start_time = pygame.time.get_ticks()
                         elif choice == "Sair":
                             self.running = False
                     elif event.key == pygame.K_l:
@@ -182,26 +192,18 @@ class GameManager:
                 # Suporte a mouse: hover e clique
                 elif event.type == pygame.MOUSEMOTION:
                     mx, my = event.pos
-                    # Calcula região das opções (centralizadas, Y começando em 250)
-                    option_y = 250
-                    for idx, _ in enumerate(self.menu_options):
-                        rect = pygame.Rect(
-                            self.width // 2 - 120, option_y - 8, 240, 44
-                        )
+                    # Verifica hover sobre as opções do menu
+                    for idx, rect in enumerate(self.menu_rects):
                         if rect.collidepoint(mx, my):
                             self.menu_selection = idx
                             break
-                        option_y += 50
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:  # clique esquerdo
                         mx, my = event.pos
-                        option_y = 250
-                        for idx, option in enumerate(self.menu_options):
-                            rect = pygame.Rect(
-                                self.width // 2 - 120, option_y - 8, 240, 44
-                            )
+                        # Verifica clique nas opções do menu
+                        for idx, rect in enumerate(self.menu_rects):
                             if rect.collidepoint(mx, my):
-                                choice = option
+                                choice = self.menu_options[idx]
                                 if choice == "Iniciar Jogo":
                                     self.current_state = "game"
                                     self._restart_game()
@@ -210,10 +212,14 @@ class GameManager:
                                     self.leaderboard_screen.alpha = 0
                                     self.leaderboard_screen.last_time = pygame.time.get_ticks()
                                     self.leaderboard_screen.start_time = pygame.time.get_ticks()
+                                elif choice == "Créditos":
+                                    self.current_state = "credits"
+                                    self.credits_screen.alpha = 0
+                                    self.credits_screen.last_time = pygame.time.get_ticks()
+                                    self.credits_screen.start_time = pygame.time.get_ticks()
                                 elif choice == "Sair":
                                     self.running = False
                                 break
-                            option_y += 50
 
             # Tela de input de highscore
             elif self.current_state == "highscore_input":
@@ -228,6 +234,12 @@ class GameManager:
             # Tela de leaderboard
             elif self.current_state == "leaderboard":
                 result = self.leaderboard_screen.handle_event(event)
+                if result == "menu":
+                    self.current_state = "start_screen"
+
+            # Tela de créditos
+            elif self.current_state == "credits":
+                result = self.credits_screen.handle_event(event)
                 if result == "menu":
                     self.current_state = "start_screen"
 
@@ -246,9 +258,11 @@ class GameManager:
         # Atualiza apenas se estiver no estado de jogo
         if self.current_state == "game":
             if not self.game_over:
-                # Calcula pontuação baseada em tempo (segundos * 10) ou distância
-                elapsed_seconds = (current_time - self.start_ticks) // 1000
-                self.score = elapsed_seconds * 10  # 10 pontos por segundo
+                # Calcula pontuação baseada na distância percorrida + bônus
+                # Distância é medida em pixels, convertemos para metros (dividindo por 100)
+                # E multiplicamos por 1 para cada metro = 1 ponto
+                distance_in_meters = int(self.game_world.distance_traveled / 100)
+                self.score = distance_in_meters + self.bonus_score
 
             # Atualiza o mundo do jogo com as teclas pressionadas
             keys = pygame.key.get_pressed() if self.player_controls_enabled else {}
@@ -296,6 +310,10 @@ class GameManager:
         elif self.current_state == "leaderboard":
             self.leaderboard_screen.update()
 
+        # ADICIONADO: Atualiza a tela de créditos (fade-in)
+        elif self.current_state == "credits":
+            self.credits_screen.update()
+
         # ADICIONADO: Para estados de menu, não faz nada especial
         elif self.current_state in ["start_screen", "leaderboard", "game_over"]:
             # Esses estados não precisam de atualizações de jogo
@@ -304,10 +322,12 @@ class GameManager:
 
     def _check_rocket_explosion(self):
         """Verifica se a rocket explodiu inimigos e adiciona pontos"""
+        # NOTA: A adição de pontos agora é feita diretamente no game_world
+        # quando o foguete colide com o inimigo (linha ~85 de game_world.py)
         if hasattr(self.game_world, "rocket_explosion_active") and self.game_world.rocket_explosion_active:
             for enemy in self.game_world.enemies[:]:
                 if self.game_world.rocket_explosion_rect.colliderect(enemy.rect):
-                    self.score += 50  # ADICIONA 50 PONTOS POR INIMIGO EXPLODIDO
+                    # Pontos já são adicionados no game_world.update()
                     self.game_world.enemies.remove(enemy)
                     # Pode tocar som de inimigo explodindo, se quiser
                     if hasattr(self, "explosion_sound"):
@@ -402,6 +422,10 @@ class GameManager:
                 # Congela todo o jogo
                 self.game_world.freeze_all()
                 self.player_controls_enabled = False
+                
+                # Congela os sidegifs
+                for gif in self.side_gifs_list:
+                    gif.frozen = True
 
                 # Ativa explosão
                 car_center = self.game_world.car.rect.center
@@ -418,8 +442,14 @@ class GameManager:
                 break  # Sai do loop após a primeira colisão
 
     def _check_fuel(self):
+        """Verifica se o combustível acabou"""
         if self.game_world.car.fuel <= 0:
             self.game_world.freeze_all()
+            
+            # Congela os sidegifs
+            for gif in self.side_gifs_list:
+                gif.frozen = True
+                
             self.game_over = True
             self.game_over_time = pygame.time.get_ticks()
 
@@ -497,6 +527,10 @@ class GameManager:
             # ADICIONADO: Desenha a tela de leaderboard
             self.leaderboard_screen.draw(self.screen.surface)
 
+        elif self.current_state == "credits":
+            # ADICIONADO: Desenha a tela de créditos
+            self.credits_screen.draw(self.screen.surface)
+
         elif self.current_state == "game_over":
             # ADICIONADO: Tela de game over com opções
             self._draw_game_over_screen()
@@ -549,12 +583,16 @@ class GameManager:
 
         # Reseta variáveis de estado
         self.score = 0
+        self.bonus_score = 0  # Reseta os pontos de bônus
         self.start_ticks = pygame.time.get_ticks()
         self.game_over = False
         self.game_over_time = None
         self.player_controls_enabled = True
         self.showing_explosion = False
         self.explosion_end_time = 0
+        
+        # Reseta a distância percorrida
+        self.game_world.distance_traveled = 0
 
         # Reseta a tela de highscore
         self.highscore_screen.input_text = ""
@@ -635,6 +673,7 @@ class GameManager:
 
         # Opções navegáveis com destaque
         y_pos = 250
+        self.menu_rects = []  # Limpa e recria as áreas clicáveis
         for idx, option in enumerate(self.menu_options):
             is_selected = idx == self.menu_selection
             color = (255, 240, 140) if is_selected else (240, 240, 240)
@@ -643,6 +682,11 @@ class GameManager:
             # Calcula posição, aplica transformação se selecionado
             x = self.width // 2 - text.get_width() // 2
             y = y_pos
+            
+            # Armazena a área clicável (com padding)
+            rect = pygame.Rect(x - 15, y - 7, text.get_width() + 30, text.get_height() + 14)
+            self.menu_rects.append(rect)
+            
             if is_selected:
                 # Pula levemente e aumenta
                 scaled = int(text.get_height() * pulse)

@@ -32,7 +32,7 @@ class Player(Carro):
         # Sistema de combustível
         self.max_fuel = 100
         self.fuel = self.max_fuel
-        self.fuel_consumption_rate = 0.05
+        self.fuel_consumption_rate = 0.04  # Taxa de consumo reduzida para facilitar
 
         # Sistema de foguetes/bazuca
         self.rockets = []

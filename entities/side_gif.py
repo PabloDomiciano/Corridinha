@@ -24,8 +24,13 @@ class SideGif:
         self.last_update = pygame.time.get_ticks()
         self.total_frames = len(self.frames)
         self.screen_height = pygame.display.get_surface().get_height()
+        self.frozen = False  # Atributo para congelar o GIF
 
     def update(self):
+        # Não atualiza se estiver congelado
+        if self.frozen:
+            return
+            
         now = pygame.time.get_ticks()
         if self.total_frames > 0 and now - self.last_update >= self.frame_duration:
             self.current_frame = (self.current_frame + 1) % self.total_frames
